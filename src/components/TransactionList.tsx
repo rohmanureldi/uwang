@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
-import { DEFAULT_CATEGORIES } from '../utils/categories';
 import CategoryModal from './CategoryModal';
 
 interface Props {
@@ -14,10 +13,9 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterCategory, setFilterCategory] = useState<string>('');
-  const [dateFrom, setDateFrom] = useState<string>('');
-  const [dateTo, setDateTo] = useState<string>('');
   const [editForm, setEditForm] = useState({
     amount: '',
     description: '',
@@ -40,7 +38,16 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
   };
 
   const saveEdit = (id: string) => {
-    if (!editForm.amount || !editForm.description || !editForm.category) return;
+    if (!editForm.amount || !editForm.category) {
+      if (!editForm.amount) {
+        setErrorMessage('Masukkan jumlah terlebih dahulu');
+      } else if (!editForm.category) {
+        setErrorMessage('Pilih kategori terlebih dahulu');
+      }
+      setTimeout(() => setErrorMessage(''), 3000);
+      return;
+    }
+    setErrorMessage('');
 
     onEditTransaction(id, {
       amount: parseFloat(editForm.amount.replace(/\./g, '')),
@@ -215,6 +222,12 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                     Batal
                   </button>
                 </div>
+                
+                {errorMessage && (
+                  <div className="mt-2 p-2 bg-red-600 bg-opacity-20 border border-red-600 text-red-400 rounded text-sm animate-fadeIn">
+                    {errorMessage}
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-between gap-4">
@@ -296,6 +309,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
           </div>
         </div>
       )}
+
+
     </div>
   );
 }

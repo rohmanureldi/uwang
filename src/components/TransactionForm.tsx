@@ -14,6 +14,8 @@ export default function TransactionForm({ onAddTransaction }: Props) {
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [amountError, setAmountError] = useState('');
+  const [categoryError, setCategoryError] = useState('');
 
   const formatNumber = (value: string) => {
     const num = value.replace(/\D/g, '');
@@ -27,7 +29,20 @@ export default function TransactionForm({ onAddTransaction }: Props) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !description || !category) return;
+    setAmountError('');
+    setCategoryError('');
+    
+    if (!amount || !category) {
+      if (!amount) {
+        setAmountError('Masukkan jumlah terlebih dahulu');
+        setTimeout(() => setAmountError(''), 3000);
+      }
+      if (!category) {
+        setCategoryError('Pilih kategori terlebih dahulu');
+        setTimeout(() => setCategoryError(''), 3000);
+      }
+      return;
+    }
 
     onAddTransaction({
       amount: parseFloat(amount.replace(/\./g, '')),
@@ -78,21 +93,34 @@ export default function TransactionForm({ onAddTransaction }: Props) {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Jumlah"
-            value={amount}
-            onChange={handleAmountChange}
-            className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base placeholder-gray-400"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowCategoryModal(true)}
-            className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg text-left text-sm sm:text-base hover:bg-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-          >
-            {category || 'Pilih Kategori'}
-          </button>
+          <div>
+            <input
+              type="text"
+              placeholder="Jumlah"
+              value={amount}
+              onChange={handleAmountChange}
+              className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base placeholder-gray-400 w-full"
+            />
+            {amountError && (
+              <div className="mt-1 text-red-400 text-sm animate-fadeIn">
+                {amountError}
+              </div>
+            )}
+          </div>
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowCategoryModal(true)}
+              className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg text-left text-sm sm:text-base hover:bg-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none w-full"
+            >
+              {category || 'Pilih Kategori'}
+            </button>
+            {categoryError && (
+              <div className="mt-1 text-red-400 text-sm animate-fadeIn">
+                {categoryError}
+              </div>
+            )}
+          </div>
         </div>
 
         <input
@@ -101,7 +129,6 @@ export default function TransactionForm({ onAddTransaction }: Props) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           className="w-full px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base placeholder-gray-400"
-          required
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -139,6 +166,8 @@ export default function TransactionForm({ onAddTransaction }: Props) {
         onSelect={setCategory}
         type={type}
       />
+
+
     </div>
   );
 }
