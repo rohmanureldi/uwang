@@ -93,7 +93,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
 
         <button
           type="submit"
-          className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors text-sm sm:text-base"
+          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors text-sm sm:text-base"
         >
           Tambah
         </button>
