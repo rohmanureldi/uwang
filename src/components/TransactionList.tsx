@@ -91,6 +91,11 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
   }, {} as Record<string, typeof transactions>);
 
   const categories = [...new Set(transactions.map(t => t.category))];
+  
+  const categoryCount = transactions.reduce((acc, t) => {
+    acc[t.category] = (acc[t.category] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
 
   if (transactions.length === 0) {
     return (
@@ -114,9 +119,9 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
               onChange={(e) => setFilterCategory(e.target.value)}
               className="pl-3 pr-8 py-2 border border-slate-600 bg-slate-700 text-gray-100 rounded appearance-none"
             >
-              <option value="">Semua</option>
+              <option value="">Semua ({transactions.length})</option>
               {categories.map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>{cat} ({categoryCount[cat]})</option>
               ))}
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
