@@ -30,7 +30,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
   const startEdit = (transaction: Transaction) => {
     setEditingId(transaction.id);
     setEditForm({
-      amount: transaction.amount.toString(),
+      amount: transaction.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'),
       description: transaction.description,
       category: transaction.category,
       type: transaction.type,
@@ -43,7 +43,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
     if (!editForm.amount || !editForm.description || !editForm.category) return;
 
     onEditTransaction(id, {
-      amount: parseFloat(editForm.amount),
+      amount: parseFloat(editForm.amount.replace(/\./g, '')),
       description: editForm.description,
       category: editForm.category,
       type: editForm.type,
@@ -55,6 +55,16 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
 
   const cancelEdit = () => {
     setEditingId(null);
+  };
+
+  const formatNumber = (value: string) => {
+    const num = value.replace(/\D/g, '');
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  const handleEditAmountChange = (value: string) => {
+    const formatted = formatNumber(value);
+    setEditForm({...editForm, amount: formatted});
   };
 
   const filteredAndSortedTransactions = transactions
@@ -152,9 +162,9 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <input
-                    type="number"
+                    type="text"
                     value={editForm.amount}
-                    onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
+                    onChange={(e) => handleEditAmountChange(e.target.value)}
                     className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
                     placeholder="Jumlah"
                   />

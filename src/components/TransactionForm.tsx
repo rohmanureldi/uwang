@@ -15,12 +15,22 @@ export default function TransactionForm({ onAddTransaction }: Props) {
   const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
+  const formatNumber = (value: string) => {
+    const num = value.replace(/\D/g, '');
+    return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatNumber(e.target.value);
+    setAmount(formatted);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!amount || !description || !category) return;
 
     onAddTransaction({
-      amount: parseFloat(amount),
+      amount: parseFloat(amount.replace(/\./g, '')),
       description,
       category,
       type,
@@ -69,10 +79,10 @@ export default function TransactionForm({ onAddTransaction }: Props) {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <input
-            type="number"
+            type="text"
             placeholder="Jumlah"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={handleAmountChange}
             className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base placeholder-gray-400"
             required
           />
