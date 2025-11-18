@@ -11,3 +11,6 @@ html {
 body {
   font-family: 'Poppins', sans-serif;
 }
+select {
+  padding-right: 2.5rem !important;
+}
