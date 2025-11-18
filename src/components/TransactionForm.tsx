@@ -11,6 +11,8 @@ export default function TransactionForm({ onAddTransaction }: Props) {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
   const [type, setType] = useState<'income' | 'expense'>('expense');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
   const [showCategoryModal, setShowCategoryModal] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -22,7 +24,8 @@ export default function TransactionForm({ onAddTransaction }: Props) {
       description,
       category,
       type,
-      date: new Date().toISOString().split('T')[0]
+      date,
+      time
     });
 
     setAmount('');
@@ -90,6 +93,27 @@ export default function TransactionForm({ onAddTransaction }: Props) {
           className="w-full px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base placeholder-gray-400"
           required
         />
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base cursor-pointer w-full"
+            style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+            onFocus={(e) => e.target.showPicker?.()}
+            required
+          />
+          <input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base cursor-pointer w-full"
+            style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+            onFocus={(e) => e.target.showPicker?.()}
+            required
+          />
+        </div>
 
         <button
           type="submit"

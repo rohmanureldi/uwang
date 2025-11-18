@@ -17,7 +17,9 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
     amount: '',
     description: '',
     category: '',
-    type: 'expense' as 'income' | 'expense'
+    type: 'expense' as 'income' | 'expense',
+    date: '',
+    time: ''
   });
 
   const startEdit = (transaction: Transaction) => {
@@ -26,7 +28,9 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       amount: transaction.amount.toString(),
       description: transaction.description,
       category: transaction.category,
-      type: transaction.type
+      type: transaction.type,
+      date: transaction.date,
+      time: transaction.time || ''
     });
   };
 
@@ -38,7 +42,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       description: editForm.description,
       category: editForm.category,
       type: editForm.type,
-      date: new Date().toISOString().split('T')[0]
+      date: editForm.date,
+      time: editForm.time
     });
     setEditingId(null);
   };
@@ -108,6 +113,24 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                   className="w-full px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
                   placeholder="Deskripsi"
                 />
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                    className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm cursor-pointer"
+                    style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+                    onFocus={(e) => e.target.showPicker?.()}
+                  />
+                  <input
+                    type="time"
+                    value={editForm.time}
+                    onChange={(e) => setEditForm({...editForm, time: e.target.value})}
+                    className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm cursor-pointer"
+                    style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+                    onFocus={(e) => e.target.showPicker?.()}
+                  />
+                </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => saveEdit(transaction.id)}
@@ -130,6 +153,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
                     <span>{transaction.category}</span>
                     <span>• {transaction.date}</span>
+                    {transaction.time && <span>• {transaction.time}</span>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
