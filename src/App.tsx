@@ -58,26 +58,30 @@ function App() {
     <div className="min-h-screen bg-slate-800 p-4 sm:p-6 lg:p-8">
       <div className="max-w-sm sm:max-w-md lg:max-w-6xl mx-auto">
         <div className="text-center py-6 lg:py-8 animate-fadeIn">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">Uwang</h1>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">💰 Uwang</h1>
           <p className="text-gray-400 text-sm lg:text-base">Kelola Keuangan Rumah Tangga</p>
           
           <div className="flex justify-center mt-4">
-            <div className="bg-slate-700 rounded-lg p-1 border border-slate-600">
+            <div className="bg-slate-700 rounded-lg p-1 border border-slate-600 shadow-lg">
               <button
                 onClick={() => setViewMode('month')}
-                className={`px-4 py-2 rounded text-sm transition-all ${
-                  viewMode === 'month' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+                className={`px-4 py-2 rounded text-sm transition-all duration-300 transform ${
+                  viewMode === 'month' 
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105' 
+                    : 'text-gray-400 hover:text-white hover:bg-slate-600'
                 }`}
               >
-                Bulan Ini
+                📅 Bulan Ini
               </button>
               <button
                 onClick={() => setViewMode('all')}
-                className={`px-4 py-2 rounded text-sm transition-all ${
-                  viewMode === 'all' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'
+                className={`px-4 py-2 rounded text-sm transition-all duration-300 transform ${
+                  viewMode === 'all' 
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105' 
+                    : 'text-gray-400 hover:text-white hover:bg-slate-600'
                 }`}
               >
-                Semua
+                📊 Semua
               </button>
             </div>
           </div>

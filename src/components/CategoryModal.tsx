@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getCategories, addCustomCategory, deleteCustomCategory, DEFAULT_CATEGORIES } from '../utils/categories';
+import { getCategoryIcon } from '../utils/categoryIcons';
 
 interface Props {
   isOpen: boolean;
@@ -53,9 +54,10 @@ export default function CategoryModal({ isOpen, onClose, onSelect, type }: Props
               <div key={category} className="flex items-center justify-between p-3 rounded-lg border border-slate-500 hover:bg-slate-600 transition-all animate-fadeIn" style={{animationDelay: `${index * 0.05}s`}}>
                 <button
                   onClick={() => handleSelect(category)}
-                  className="flex-1 text-left text-gray-100"
+                  className="flex-1 text-left text-gray-100 flex items-center gap-2"
                 >
-                  {category}
+                  <span>{getCategoryIcon(category)}</span>
+                  <span>{category}</span>
                 </button>
                 {!DEFAULT_CATEGORIES[type].includes(category) && (
                   <button

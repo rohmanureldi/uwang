@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
+import { getCategoryIcon } from '../utils/categoryIcons';
 import CategoryModal from './CategoryModal';
 
 interface Props {
@@ -239,7 +240,10 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-gray-100 text-sm sm:text-base truncate">{transaction.description}</p>
                   <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
-                    <span>{transaction.category}</span>
+                    <span className="flex items-center gap-1">
+                      <span>{getCategoryIcon(transaction.category)}</span>
+                      <span>{transaction.category}</span>
+                    </span>
                     {transaction.time && <span>• {transaction.time}</span>}
                   </div>
                 </div>

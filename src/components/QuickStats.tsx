@@ -58,10 +58,14 @@ export default function QuickStats({ transactions }: Props) {
       <h3 className="font-semibold text-gray-100 mb-4 text-lg">Statistik Cepat</h3>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
-          <div key={index} className="text-center p-3 bg-slate-600 rounded-lg">
-            <div className="text-2xl mb-1">{stat.icon}</div>
+          <div 
+            key={index} 
+            className="text-center p-3 bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg border border-slate-500 hover:scale-105 transition-all duration-300 animate-fadeIn"
+            style={{animationDelay: `${index * 0.1}s`}}
+          >
+            <div className="text-2xl mb-2 animate-bounce" style={{animationDelay: `${index * 0.2}s`, animationDuration: '2s'}}>{stat.icon}</div>
             <p className="text-xs text-gray-400 mb-1">{stat.label}</p>
-            <p className="font-semibold text-gray-100 text-sm break-words">{stat.value}</p>
+            <p className="font-semibold text-gray-100 text-sm break-words bg-gradient-to-r from-white to-gray-300 bg-clip-text">{stat.value}</p>
             {stat.subtitle && (
               <p className="text-xs text-gray-500 mt-1 truncate" title={stat.subtitle}>
                 {stat.subtitle}

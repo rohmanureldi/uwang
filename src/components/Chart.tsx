@@ -32,8 +32,14 @@ export default function Chart({ transactions }: Props) {
     datasets: [
       {
         data: [income, expenses],
-        backgroundColor: ['#34d399', '#f87171'],
-        borderWidth: 0,
+        backgroundColor: [
+          'rgba(52, 211, 153, 0.8)',
+          'rgba(248, 113, 113, 0.8)'
+        ],
+        borderColor: ['#34d399', '#f87171'],
+        borderWidth: 2,
+        hoverBackgroundColor: ['#34d399', '#f87171'],
+        hoverBorderWidth: 3,
       },
     ],
   };
@@ -41,11 +47,18 @@ export default function Chart({ transactions }: Props) {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: {
+      animateRotate: true,
+      animateScale: true,
+      duration: 1000,
+    },
     plugins: {
       legend: {
         position: 'bottom' as const,
         labels: {
           color: '#d1d5db',
+          usePointStyle: true,
+          padding: 20,
         },
       },
       tooltip: {
@@ -54,6 +67,7 @@ export default function Chart({ transactions }: Props) {
         bodyColor: '#f1f5f9',
         borderColor: '#475569',
         borderWidth: 1,
+        cornerRadius: 8,
         callbacks: {
           label: (context: any) => {
             return `${context.label}: ${formatIDR(context.raw)}`;

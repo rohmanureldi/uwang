@@ -1,5 +1,6 @@
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
+import { getCategoryIcon } from '../utils/categoryIcons';
 
 interface Props {
   transactions: Transaction[];
@@ -35,7 +36,7 @@ export default function Balance({ transactions }: Props) {
     <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 h-fit transition-all animate-scaleIn">
       <div className="text-center">
         <p className="text-gray-400 text-sm mb-2">Saldo</p>
-        <p className={`text-xl sm:text-2xl lg:text-3xl font-bold break-words ${balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <p className={`text-xl sm:text-2xl lg:text-3xl font-bold break-words transition-all duration-300 ${balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>
           {formatIDR(balance)}
         </p>
       </div>
@@ -53,14 +54,25 @@ export default function Balance({ transactions }: Props) {
       
       {topCategories.length > 0 && (
         <div className="mt-4 pt-4 border-t border-slate-600">
-          <p className="text-xs text-gray-500 mb-2">Top Kategori</p>
-          <div className="space-y-1">
+          <p className="text-xs text-gray-500 mb-3">Top Kategori</p>
+          <div className="space-y-2">
             {topCategories.map(([category, amount]) => {
-              const percentage = expenses > 0 ? (amount / expenses * 100).toFixed(0) : 0;
+              const percentage = expenses > 0 ? (amount / expenses * 100) : 0;
               return (
-                <div key={category} className="flex justify-between items-center text-xs">
-                  <span className="text-gray-400 truncate flex-1">{category}</span>
-                  <span className="text-gray-300 ml-2">{percentage}%</span>
+                <div key={category} className="space-y-1">
+                  <div className="flex justify-between items-center text-xs">
+                    <div className="flex items-center gap-1">
+                      <span>{getCategoryIcon(category)}</span>
+                      <span className="text-gray-400 truncate">{category}</span>
+                    </div>
+                    <span className="text-gray-300">{percentage.toFixed(0)}%</span>
+                  </div>
+                  <div className="w-full bg-slate-600 rounded-full h-1.5">
+                    <div 
+                      className="bg-gradient-to-r from-indigo-500 to-purple-500 h-1.5 rounded-full transition-all duration-500"
+                      style={{ width: `${percentage}%` }}
+                    ></div>
+                  </div>
                 </div>
               );
             })}
