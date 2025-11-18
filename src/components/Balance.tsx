@@ -21,7 +21,7 @@ export default function Balance({ transactions }: Props) {
     .reduce((sum, t) => sum + t.amount, 0);
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 h-fit">
+    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 h-fit transition-all animate-scaleIn">
       <div className="text-center">
         <p className="text-gray-400 text-sm mb-2">Saldo</p>
         <p className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${balance >= 0 ? 'text-green-400' : 'text-red-400'}`}>

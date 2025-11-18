@@ -122,12 +122,12 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       
       <div className="space-y-6 max-h-96 lg:max-h-[500px] overflow-y-auto">
         {Object.entries(groupedTransactions).map(([dateGroup, groupTransactions], index) => (
-          <div key={dateGroup}>
+          <div key={dateGroup} className="animate-fadeIn" style={{animationDelay: `${index * 0.1}s`}}>
             {index > 0 && <div className="border-t border-slate-600 mb-4"></div>}
-            <h4 className="font-semibold text-gray-100 mb-3 text-base bg-slate-600 px-3 py-2 rounded-lg">{dateGroup}</h4>
+            <h4 className="font-semibold text-gray-100 mb-3 text-base bg-slate-600 px-3 py-2 rounded-lg transition-all ">{dateGroup}</h4>
             <div className="space-y-3">
-              {groupTransactions.map((transaction) => (
-          <div key={transaction.id} className="border-b border-slate-600 last:border-b-0 pb-3 last:pb-0">
+              {groupTransactions.map((transaction, txIndex) => (
+          <div key={transaction.id} className="border-b border-slate-600 last:border-b-0 pb-3 last:pb-0 animate-fadeIn transition-all hover:bg-opacity-30 rounded-lg px-2 py-1" style={{animationDelay: `${(index * 0.1) + (txIndex * 0.05)}s`}}>
             {editingId === transaction.id ? (
               <div className="space-y-3">
                 <div className="flex gap-4">

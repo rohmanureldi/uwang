@@ -39,7 +39,7 @@ export default function CategoryModal({ isOpen, onClose, onSelect, type }: Props
       onClick={onClose}
     >
       <div 
-        className="w-full sm:w-96 sm:rounded-xl rounded-t-xl max-h-[80vh] overflow-hidden border border-slate-500 shadow-2xl bg-slate-700"
+        className="w-full sm:w-96 sm:rounded-xl rounded-t-xl max-h-[80vh] overflow-hidden border border-slate-500 shadow-2xl bg-slate-700 animate-scaleIn"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-4 border-b border-slate-600 flex justify-between items-center">
@@ -49,8 +49,8 @@ export default function CategoryModal({ isOpen, onClose, onSelect, type }: Props
         
         <div className="p-4 max-h-64 overflow-y-auto">
           <div className="space-y-2">
-            {categories.map((category) => (
-              <div key={category} className="flex items-center justify-between p-3 rounded-lg border border-slate-500 hover:bg-slate-600 transition-all">
+            {categories.map((category, index) => (
+              <div key={category} className="flex items-center justify-between p-3 rounded-lg border border-slate-500 hover:bg-slate-600 transition-all animate-fadeIn" style={{animationDelay: `${index * 0.05}s`}}>
                 <button
                   onClick={() => handleSelect(category)}
                   className="flex-1 text-left text-gray-100"

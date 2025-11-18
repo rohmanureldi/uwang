@@ -34,7 +34,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
   };
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600">
+    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 transition-all animate-scaleIn">
       <h3 className="font-semibold text-gray-100 mb-4 text-lg">Tambah Transaksi</h3>
       
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -117,7 +117,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
 
         <button
           type="submit"
-          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors text-sm sm:text-base"
+          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 hover:scale-105 transition-all text-sm sm:text-base"
         >
           Tambah
         </button>

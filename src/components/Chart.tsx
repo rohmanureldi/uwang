@@ -64,7 +64,7 @@ export default function Chart({ transactions }: Props) {
   };
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600">
+    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 transition-all animate-scaleIn">
       <h3 className="font-semibold text-gray-100 mb-4 text-lg">Grafik Keuangan</h3>
       <div className="h-48 sm:h-56">
         <Doughnut data={data} options={options} />
