@@ -1,35 +1,67 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState, useEffect } from 'react';
+import { Transaction } from './types';
+import TransactionForm from './components/TransactionForm';
+import TransactionList from './components/TransactionList';
+import Balance from './components/Balance';
+import Chart from './components/Chart';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('transactions');
+    if (saved) {
+      setTransactions(JSON.parse(saved));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('transactions', JSON.stringify(transactions));
+  }, [transactions]);
+
+  const addTransaction = (transactionData: Omit<Transaction, 'id'>) => {
+    const newTransaction: Transaction = {
+      ...transactionData,
+      id: Date.now().toString()
+    };
+    setTransactions(prev => [newTransaction, ...prev]);
+  };
+
+  const editTransaction = (id: string, transactionData: Omit<Transaction, 'id'>) => {
+    setTransactions(prev => 
+      prev.map(t => t.id === id ? { ...transactionData, id } : t)
+    );
+  };
+
+  const deleteTransaction = (id: string) => {
+    setTransactions(prev => prev.filter(t => t.id !== id));
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-sm sm:max-w-md lg:max-w-6xl mx-auto">
+        <div className="text-center py-6 lg:py-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Uwang</h1>
+          <p className="text-gray-600 text-sm lg:text-base">Kelola Keuangan Rumah Tangga</p>
+        </div>
+        
+        <div className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-6 lg:space-y-0">
+          <div className="lg:col-span-1 space-y-6">
+            <Balance transactions={transactions} />
+            <Chart transactions={transactions} />
+          </div>
+          <div className="lg:col-span-3 space-y-6">
+            <TransactionForm onAddTransaction={addTransaction} />
+            <TransactionList 
+              transactions={transactions} 
+              onEditTransaction={editTransaction}
+              onDeleteTransaction={deleteTransaction}
+            />
+          </div>
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
