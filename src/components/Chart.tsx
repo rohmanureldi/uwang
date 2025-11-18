@@ -20,9 +20,9 @@ export default function Chart({ transactions }: Props) {
 
   if (income === 0 && expenses === 0) {
     return (
-      <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border text-center">
+      <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 text-center">
         <div className="text-gray-400 text-4xl mb-2">📊</div>
-        <p className="text-gray-500 text-sm">Belum ada data untuk grafik</p>
+        <p className="text-gray-400 text-sm">Belum ada data untuk grafik</p>
       </div>
     );
   }
@@ -32,7 +32,7 @@ export default function Chart({ transactions }: Props) {
     datasets: [
       {
         data: [income, expenses],
-        backgroundColor: ['#10b981', '#ef4444'],
+        backgroundColor: ['#34d399', '#f87171'],
         borderWidth: 0,
       },
     ],
@@ -44,8 +44,16 @@ export default function Chart({ transactions }: Props) {
     plugins: {
       legend: {
         position: 'bottom' as const,
+        labels: {
+          color: '#d1d5db',
+        },
       },
       tooltip: {
+        backgroundColor: '#1e293b',
+        titleColor: '#f1f5f9',
+        bodyColor: '#f1f5f9',
+        borderColor: '#475569',
+        borderWidth: 1,
         callbacks: {
           label: (context: any) => {
             return `${context.label}: ${formatIDR(context.raw)}`;
@@ -56,8 +64,8 @@ export default function Chart({ transactions }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
-      <h3 className="font-semibold text-gray-900 mb-4 text-lg">Grafik Keuangan</h3>
+    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600">
+      <h3 className="font-semibold text-gray-100 mb-4 text-lg">Grafik Keuangan</h3>
       <div className="h-48 sm:h-56">
         <Doughnut data={data} options={options} />
       </div>

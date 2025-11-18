@@ -38,11 +38,11 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-slate-800 p-4 sm:p-6 lg:p-8">
       <div className="max-w-sm sm:max-w-md lg:max-w-6xl mx-auto">
         <div className="text-center py-6 lg:py-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">Uwang</h1>
-          <p className="text-gray-600 text-sm lg:text-base">Kelola Keuangan Rumah Tangga</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-primary-400 to-primary-600 bg-clip-text">Uwang</h1>
+          <p className="text-gray-400 text-sm lg:text-base">Kelola Keuangan Rumah Tangga</p>
         </div>
         
         <div className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-6 lg:space-y-0">

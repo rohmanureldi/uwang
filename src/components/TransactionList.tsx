@@ -49,20 +49,20 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
 
   if (transactions.length === 0) {
     return (
-      <div className="bg-white rounded-xl p-6 sm:p-8 shadow-sm border text-center">
+      <div className="bg-slate-700 rounded-xl p-6 sm:p-8 shadow-lg border border-slate-600 text-center">
         <div className="text-gray-400 text-4xl sm:text-5xl mb-2">💰</div>
-        <p className="text-gray-500 text-sm sm:text-base">Belum ada transaksi</p>
+        <p className="text-gray-400 text-sm sm:text-base">Belum ada transaksi</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
-      <h3 className="font-semibold text-gray-900 mb-4 text-lg">Riwayat Transaksi</h3>
+    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600">
+      <h3 className="font-semibold text-gray-100 mb-4 text-lg">Riwayat Transaksi</h3>
       
       <div className="space-y-3 max-h-96 lg:max-h-[500px] overflow-y-auto">
         {transactions.map((transaction) => (
-          <div key={transaction.id} className="border-b last:border-b-0 pb-3 last:pb-0">
+          <div key={transaction.id} className="border-b border-slate-600 last:border-b-0 pb-3 last:pb-0">
             {editingId === transaction.id ? (
               <div className="space-y-3">
                 <div className="flex gap-4">
@@ -73,7 +73,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                       checked={editForm.type === 'income'}
                       onChange={(e) => setEditForm({...editForm, type: e.target.value as 'income', category: ''})}
                     />
-                    <span className="text-sm text-green-600">Pemasukan</span>
+                    <span className="text-sm text-green-400">Pemasukan</span>
                   </label>
                   <label className="flex items-center gap-2">
                     <input
@@ -82,7 +82,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                       checked={editForm.type === 'expense'}
                       onChange={(e) => setEditForm({...editForm, type: e.target.value as 'expense', category: ''})}
                     />
-                    <span className="text-sm text-red-600">Pengeluaran</span>
+                    <span className="text-sm text-red-400">Pengeluaran</span>
                   </label>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -90,13 +90,13 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                     type="number"
                     value={editForm.amount}
                     onChange={(e) => setEditForm({...editForm, amount: e.target.value})}
-                    className="px-3 py-2 border rounded text-sm"
+                    className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
                     placeholder="Jumlah"
                   />
                   <button
                     type="button"
                     onClick={() => setShowCategoryModal(true)}
-                    className="px-3 py-2 border rounded text-sm text-left hover:bg-gray-50"
+                    className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm text-left hover:bg-slate-500"
                   >
                     {editForm.category || 'Pilih Kategori'}
                   </button>
@@ -105,7 +105,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                   type="text"
                   value={editForm.description}
                   onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-                  className="w-full px-3 py-2 border rounded text-sm"
+                  className="w-full px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
                   placeholder="Deskripsi"
                 />
                 <div className="flex gap-2">
@@ -117,7 +117,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                   </button>
                   <button
                     onClick={cancelEdit}
-                    className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+                    className="px-3 py-1 bg-slate-500 text-white rounded text-sm hover:bg-slate-400"
                   >
                     Batal
                   </button>
@@ -126,29 +126,29 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
             ) : (
               <div className="flex items-center justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-900 text-sm sm:text-base truncate">{transaction.description}</p>
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500">
+                  <p className="font-medium text-gray-100 text-sm sm:text-base truncate">{transaction.description}</p>
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
                     <span>{transaction.category}</span>
                     <span>• {transaction.date}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className={`font-semibold text-sm sm:text-base whitespace-nowrap ${
-                    transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                    transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
                   }`}>
                     {transaction.type === 'income' ? '+' : '-'}{formatIDR(Math.abs(transaction.amount))}
                   </div>
                   <div className="flex gap-1">
                     <button
                       onClick={() => startEdit(transaction)}
-                      className="p-1 text-blue-600 hover:bg-blue-50 rounded"
+                      className="p-1 text-primary-400 hover:bg-slate-600 rounded"
                       title="Edit"
                     >
                       ✏️
                     </button>
                     <button
                       onClick={() => onDeleteTransaction(transaction.id)}
-                      className="p-1 text-red-600 hover:bg-red-50 rounded"
+                      className="p-1 text-red-400 hover:bg-slate-600 rounded"
                       title="Delete"
                     >
                       🗑️

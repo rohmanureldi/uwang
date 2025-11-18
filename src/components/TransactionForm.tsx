@@ -31,8 +31,8 @@ export default function TransactionForm({ onAddTransaction }: Props) {
   };
 
   return (
-    <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
-      <h3 className="font-semibold text-gray-900 mb-4 text-lg">Tambah Transaksi</h3>
+    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600">
+      <h3 className="font-semibold text-gray-100 mb-4 text-lg">Tambah Transaksi</h3>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex gap-4 sm:gap-6">
@@ -47,7 +47,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
               }}
               className="text-green-600"
             />
-            <span className="text-sm sm:text-base text-green-600">Pemasukan</span>
+            <span className="text-sm sm:text-base text-green-400">Pemasukan</span>
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
@@ -58,9 +58,9 @@ export default function TransactionForm({ onAddTransaction }: Props) {
                 setType(e.target.value as 'expense');
                 setCategory('');
               }}
-              className="text-red-600"
+              className="text-red-400"
             />
-            <span className="text-sm sm:text-base text-red-600">Pengeluaran</span>
+            <span className="text-sm sm:text-base text-red-400">Pengeluaran</span>
           </label>
         </div>
 
@@ -70,13 +70,13 @@ export default function TransactionForm({ onAddTransaction }: Props) {
             placeholder="Jumlah"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm sm:text-base"
+            className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base placeholder-gray-400"
             required
           />
           <button
             type="button"
             onClick={() => setShowCategoryModal(true)}
-            className="px-4 py-3 border rounded-lg text-left text-sm sm:text-base hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+            className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg text-left text-sm sm:text-base hover:bg-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
           >
             {category || 'Pilih Kategori'}
           </button>
@@ -87,13 +87,13 @@ export default function TransactionForm({ onAddTransaction }: Props) {
           placeholder="Deskripsi"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-sm sm:text-base"
+          className="w-full px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base placeholder-gray-400"
           required
         />
 
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors text-sm sm:text-base"
+          className="w-full bg-primary-600 text-white py-3 rounded-lg font-medium hover:bg-primary-700 transition-colors text-sm sm:text-base"
         >
           Tambah
         </button>
