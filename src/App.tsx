@@ -5,6 +5,12 @@ import TransactionList from './components/TransactionList';
 import Balance from './components/Balance';
 import Chart from './components/Chart';
 import QuickStats from './components/QuickStats';
+import BudgetTracker from './components/BudgetTracker';
+import SavingsGoals from './components/SavingsGoals';
+import SpendingTrends from './components/SpendingTrends';
+import CategoryBreakdown from './components/CategoryBreakdown';
+import FinancialHealth from './components/FinancialHealth';
+import SpendingInsights from './components/SpendingInsights';
 
 function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -91,9 +97,19 @@ function App() {
           <div className="lg:col-span-1 space-y-6 animate-slideIn">
             <Balance transactions={filteredTransactions} />
             <Chart transactions={filteredTransactions} />
+            <BudgetTracker transactions={transactions} />
+            <SavingsGoals />
           </div>
           <div className="lg:col-span-3 space-y-6 animate-slideIn" style={{animationDelay: '0.1s'}}>
             <QuickStats transactions={filteredTransactions} />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <FinancialHealth transactions={transactions} />
+              <SpendingInsights transactions={transactions} />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <SpendingTrends transactions={transactions} />
+              <CategoryBreakdown transactions={filteredTransactions} />
+            </div>
             <TransactionForm onAddTransaction={addTransaction} />
             <TransactionList 
               transactions={filteredTransactions} 

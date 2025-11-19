@@ -7,3 +7,18 @@ export interface Transaction {
   date: string;
   time: string;
 }
+
+export interface Budget {
+  category: string;
+  limit: number;
+  month: string; // YYYY-MM format
+}
+
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate: string;
+  description?: string;
+}

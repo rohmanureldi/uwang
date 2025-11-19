@@ -1,4 +1,4 @@
-import { Transaction } from '../types';
+import { Transaction, Budget } from '../types';
 import { formatIDR } from '../utils/currency';
 
 interface Props {
@@ -7,6 +7,23 @@ interface Props {
 
 export default function QuickStats({ transactions }: Props) {
   if (transactions.length === 0) return null;
+
+  // Check budget alerts
+  const budgets: Budget[] = JSON.parse(localStorage.getItem('budgets') || '[]');
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const currentBudgets = budgets.filter(b => b.month === currentMonth);
+  
+  const categorySpending = transactions
+    .filter(t => t.type === 'expense' && t.date.startsWith(currentMonth))
+    .reduce((acc, t) => {
+      acc[t.category] = (acc[t.category] || 0) + t.amount;
+      return acc;
+    }, {} as Record<string, number>);
+  
+  const budgetAlerts = currentBudgets.filter(budget => {
+    const spent = categorySpending[budget.category] || 0;
+    return spent > budget.limit * 0.8; // Alert at 80%
+  });
 
   const expenses = transactions.filter(t => t.type === 'expense');
   const income = transactions.filter(t => t.type === 'income');
@@ -56,6 +73,21 @@ export default function QuickStats({ transactions }: Props) {
   return (
     <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
       <h3 className="font-semibold text-gray-100 mb-4 text-lg">Statistik Cepat</h3>
+      
+      {budgetAlerts.length > 0 && (
+        <div className="mb-4 p-3 bg-orange-900 bg-opacity-30 border border-orange-600 rounded-lg">
+          <p className="text-orange-400 text-sm font-semibold mb-1">⚠️ Peringatan Budget</p>
+          {budgetAlerts.map(budget => {
+            const spent = categorySpending[budget.category] || 0;
+            const percentage = (spent / budget.limit) * 100;
+            return (
+              <p key={budget.category} className="text-orange-300 text-xs">
+                {budget.category}: {percentage.toFixed(0)}% dari budget
+              </p>
+            );
+          })}
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div 
