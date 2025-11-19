@@ -1,5 +1,4 @@
 import { Transaction } from '../types';
-import { formatIDR } from '../utils/currency';
 
 interface Props {
   transactions: Transaction[];
