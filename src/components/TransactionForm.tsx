@@ -59,12 +59,12 @@ export default function TransactionForm({ onAddTransaction }: Props) {
   };
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 transition-all animate-scaleIn">
-      <h3 className="font-semibold text-gray-100 mb-4 text-lg">Tambah Transaksi</h3>
+    <div className="bg-slate-700 rounded-xl p-3 sm:p-4 lg:p-6 shadow-lg border border-slate-600 transition-all animate-scaleIn">
+      <h3 className="font-semibold text-gray-100 mb-3 sm:mb-4 text-base sm:text-lg">Tambah Transaksi</h3>
       
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         <div className="flex gap-4 sm:gap-6">
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer py-2">
             <input
               type="radio"
               value="income"
@@ -73,11 +73,11 @@ export default function TransactionForm({ onAddTransaction }: Props) {
                 setType(e.target.value as 'income');
                 setCategory('');
               }}
-              className="text-green-600"
+              className="text-green-600 w-4 h-4"
             />
-            <span className="text-sm sm:text-base text-green-400">Pemasukan</span>
+            <span className="text-sm text-green-400">Pemasukan</span>
           </label>
-          <label className="flex items-center gap-2 cursor-pointer">
+          <label className="flex items-center gap-2 cursor-pointer py-2">
             <input
               type="radio"
               value="expense"
@@ -86,9 +86,9 @@ export default function TransactionForm({ onAddTransaction }: Props) {
                 setType(e.target.value as 'expense');
                 setCategory('');
               }}
-              className="text-red-400"
+              className="text-red-400 w-4 h-4"
             />
-            <span className="text-sm sm:text-base text-red-400">Pengeluaran</span>
+            <span className="text-sm text-red-400">Pengeluaran</span>
           </label>
         </div>
 
@@ -99,7 +99,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
               placeholder="Jumlah"
               value={amount}
               onChange={handleAmountChange}
-              className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base placeholder-gray-400 w-full"
+              className="px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm placeholder-gray-400 w-full touch-manipulation"
             />
             {amountError && (
               <div className="mt-1 text-red-400 text-sm animate-fadeIn">
@@ -111,7 +111,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
             <button
               type="button"
               onClick={() => setShowCategoryModal(true)}
-              className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg text-left text-sm sm:text-base hover:bg-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none w-full"
+              className="px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg text-left text-sm hover:bg-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none w-full touch-manipulation"
             >
               {category || 'Pilih Kategori'}
             </button>
@@ -128,7 +128,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
           placeholder="Deskripsi"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base placeholder-gray-400"
+          className="w-full px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm placeholder-gray-400 touch-manipulation"
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -136,25 +136,23 @@ export default function TransactionForm({ onAddTransaction }: Props) {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base cursor-pointer w-full"
-            style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
-            onFocus={(e) => e.target.showPicker?.()}
+            className="px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm cursor-pointer w-full touch-manipulation"
+            style={{ colorScheme: 'dark' }}
             required
           />
           <input
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="px-4 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm sm:text-base cursor-pointer w-full"
-            style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
-            onFocus={(e) => e.target.showPicker?.()}
+            className="px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm cursor-pointer w-full touch-manipulation"
+            style={{ colorScheme: 'dark' }}
             required
           />
         </div>
 
         <button
           type="submit"
-          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 hover:scale-105 transition-all text-sm sm:text-base"
+          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-all text-sm touch-manipulation min-h-[44px]"
         >
           Tambah
         </button>

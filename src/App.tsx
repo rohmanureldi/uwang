@@ -169,19 +169,27 @@ function App() {
 
 
   return (
-    <div className="min-h-screen bg-slate-800 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-sm sm:max-w-md lg:max-w-6xl mx-auto">
-        <div className="text-center py-6 lg:py-8 animate-fadeIn">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">💰 Uwang</h1>
-          <p className="text-gray-400 text-sm lg:text-base">Kelola Keuangan Rumah Tangga</p>
+    <div className="min-h-screen bg-slate-800 p-3 sm:p-4 lg:p-8">
+      <div className="max-w-full sm:max-w-md lg:max-w-6xl mx-auto">
+        <div className="text-center py-4 lg:py-8 animate-fadeIn">
+          <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">💰 Uwang</h1>
+          <p className="text-gray-400 text-xs sm:text-sm lg:text-base">Kelola Keuangan Rumah Tangga</p>
           
-          <div className="flex justify-center mt-4">
+          <div className="lg:hidden mt-2 mb-3">
+            <div className="bg-blue-900 bg-opacity-30 border border-blue-600 rounded-lg p-2 mx-4">
+              <p className="text-blue-300 text-xs">
+                💡 <strong>Tip:</strong> Akses dari desktop untuk fitur lengkap seperti analytics, budgeting, dan drag & drop!
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex justify-center mt-3">
             <div className="bg-slate-700 rounded-lg p-1 border border-slate-600 shadow-lg">
               <button
                 onClick={() => setViewMode('month')}
-                className={`px-4 py-2 rounded text-sm transition-all duration-300 transform ${
+                className={`px-3 py-2 rounded text-xs sm:text-sm transition-all duration-300 ${
                   viewMode === 'month' 
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105' 
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' 
                     : 'text-gray-400 hover:text-white hover:bg-slate-600'
                 }`}
               >
@@ -189,9 +197,9 @@ function App() {
               </button>
               <button
                 onClick={() => setViewMode('all')}
-                className={`px-4 py-2 rounded text-sm transition-all duration-300 transform ${
+                className={`px-3 py-2 rounded text-xs sm:text-sm transition-all duration-300 ${
                   viewMode === 'all' 
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg scale-105' 
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' 
                     : 'text-gray-400 hover:text-white hover:bg-slate-600'
                 }`}
               >
@@ -201,8 +209,8 @@ function App() {
           </div>
         </div>
         
-        <div className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-6 lg:space-y-0">
-          <div className="lg:col-span-1 space-y-6 animate-slideIn">
+        <div className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-4 lg:space-y-0">
+          <div className="lg:col-span-1 space-y-4 lg:space-y-6 animate-slideIn">
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={sidebarCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
                 {sidebarCards.map((card) => (
@@ -213,9 +221,9 @@ function App() {
               </SortableContext>
             </DndContext>
           </div>
-          <div className="lg:col-span-3 space-y-6 animate-slideIn" style={{animationDelay: '0.1s'}}>
+          <div className="lg:col-span-3 space-y-4 lg:space-y-6 animate-slideIn" style={{animationDelay: '0.1s'}}>
             {/* Mobile: Form always on top */}
-            <div className="lg:hidden space-y-6">
+            <div className="lg:hidden space-y-4">
               <TransactionForm onAddTransaction={addTransaction} />
               <TransactionList 
                 transactions={filteredTransactions} 
@@ -241,10 +249,12 @@ function App() {
           </div>
         </div>
         
-        <DashboardCustomizer 
-          cards={dashboardCards}
-          onCardsChange={setDashboardCards}
-        />
+        <div className="hidden lg:block">
+          <DashboardCustomizer 
+            cards={dashboardCards}
+            onCardsChange={setDashboardCards}
+          />
+        </div>
       </div>
     </div>
   );

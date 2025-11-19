@@ -28,11 +28,11 @@ export default function DraggableCard({ id, children }: Props) {
       ref={setNodeRef}
       style={style}
       {...attributes}
-      className={`relative ${isDragging ? 'z-50' : ''}`}
+      className={`relative group ${isDragging ? 'z-50' : ''}`}
     >
       <div
         {...listeners}
-        className="hidden lg:block absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-200 cursor-grab active:cursor-grabbing z-10 bg-slate-600 rounded opacity-70 hover:opacity-100 transition-opacity"
+        className="hidden lg:group-hover:block absolute top-2 right-2 p-1 text-gray-400 hover:text-gray-200 cursor-grab active:cursor-grabbing z-10 bg-slate-600 rounded opacity-70 hover:opacity-100 transition-opacity"
         title="Drag to reorder"
       >
         ⋮⋮

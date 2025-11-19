@@ -12,6 +12,19 @@ export default function FinancialHealth({ transactions }: Props) {
   const income = monthlyTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
   const expenses = monthlyTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
   
+  // If no transactions, return early with no data state
+  if (monthlyTransactions.length === 0) {
+    return (
+      <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
+        <h3 className="font-semibold text-gray-100 mb-4 text-lg">🏥 Kesehatan Finansial</h3>
+        <div className="text-center py-8">
+          <div className="text-gray-400 text-4xl mb-2">📊</div>
+          <p className="text-gray-400 text-sm">Tambahkan transaksi untuk melihat kesehatan finansial</p>
+        </div>
+      </div>
+    );
+  }
+  
   const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
   const expenseRatio = income > 0 ? (expenses / income) * 100 : 0;
   
