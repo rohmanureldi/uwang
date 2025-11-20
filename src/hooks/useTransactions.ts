@@ -145,11 +145,35 @@ export function useTransactions() {
     }
   };
 
+  const resetData = async () => {
+    if (useLocalStorage || !supabase) {
+      setTransactions([]);
+      localStorage.removeItem('transactions');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('transactions')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (error) throw error;
+      setTransactions([]);
+    } catch (error) {
+      console.error('Error resetting data:', error);
+      // Fallback to localStorage reset
+      setTransactions([]);
+      localStorage.removeItem('transactions');
+    }
+  };
+
   return {
     transactions,
     loading,
     addTransaction,
     editTransaction,
-    deleteTransaction
+    deleteTransaction,
+    resetData
   };
 }

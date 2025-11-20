@@ -19,3 +19,21 @@ create policy "Users can manage their own transactions" on transactions
 
 -- Enable real-time subscriptions
 alter publication supabase_realtime add table transactions;
+
+-- Create custom categories table
+create table custom_categories (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  type text not null check (type in ('income', 'expense')),
+  created_at timestamp default now()
+);
+
+-- Enable Row Level Security for custom categories
+alter table custom_categories enable row level security;
+
+-- Create policy for custom categories
+create policy "Users can manage their own custom categories" on custom_categories
+  for all using (true);
+
+-- Enable real-time for custom categories
+alter publication supabase_realtime add table custom_categories;

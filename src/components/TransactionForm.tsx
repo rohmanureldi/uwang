@@ -60,7 +60,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
     try {
       onAddTransaction({
         amount: numericAmount,
-        description: description.trim(),
+        description: description.trim() || (type === 'income' ? 'Pemasukan' : 'Pengeluaran'),
         category: category.trim(),
         type,
         date,

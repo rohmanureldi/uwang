@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { getCategories, addCustomCategory, deleteCustomCategory, DEFAULT_CATEGORIES } from '../utils/categories';
+import { getCategories, isDefaultCategory } from '../utils/categories';
 import { getCategoryIcon } from '../utils/categoryIcons';
+import { useCustomCategories } from '../hooks/useCustomCategories';
 
 interface Props {
   isOpen: boolean;
@@ -11,7 +12,8 @@ interface Props {
 
 export default function CategoryModal({ isOpen, onClose, onSelect, type }: Props) {
   const [newCategory, setNewCategory] = useState('');
-  const categories = getCategories(type);
+  const { customCategories, addCustomCategory, deleteCustomCategory } = useCustomCategories();
+  const categories = getCategories(type, customCategories);
 
   const handleSelect = (category: string) => {
     onSelect(category);
@@ -27,8 +29,10 @@ export default function CategoryModal({ isOpen, onClose, onSelect, type }: Props
   };
 
   const handleDelete = (category: string) => {
-    deleteCustomCategory(type, category);
-    window.location.reload();
+    const categoryToDelete = customCategories.find(c => c.name === category && c.type === type);
+    if (categoryToDelete) {
+      deleteCustomCategory(categoryToDelete.id);
+    }
   };
 
   if (!isOpen) return null;
@@ -36,7 +40,7 @@ export default function CategoryModal({ isOpen, onClose, onSelect, type }: Props
   return (
     <div 
       className="fixed inset-0 flex items-end sm:items-center justify-center z-50"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(10px)' }}
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(10px)' }}
       onClick={onClose}
     >
       <div 
@@ -59,7 +63,7 @@ export default function CategoryModal({ isOpen, onClose, onSelect, type }: Props
                   <span>{getCategoryIcon(category)}</span>
                   <span>{category}</span>
                 </button>
-                {!DEFAULT_CATEGORIES[type].includes(category) && (
+                {!isDefaultCategory(type, category) && (
                   <button
                     onClick={() => handleDelete(category)}
                     className="text-red-400 hover:text-red-300 ml-2"

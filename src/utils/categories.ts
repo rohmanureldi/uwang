@@ -19,29 +19,13 @@ export const DEFAULT_CATEGORIES = {
   ]
 };
 
-export const getCategories = (type: 'income' | 'expense'): string[] => {
-  const saved = localStorage.getItem('customCategories');
-  const customCategories = saved ? JSON.parse(saved) : { income: [], expense: [] };
-  
-  return [...DEFAULT_CATEGORIES[type], ...customCategories[type]];
+export const getCategories = (type: 'income' | 'expense', customCategories: Array<{name: string, type: string}>): string[] => {
+  const custom = customCategories
+    .filter(c => c.type === type)
+    .map(c => c.name);
+  return [...DEFAULT_CATEGORIES[type], ...custom];
 };
 
-export const addCustomCategory = (type: 'income' | 'expense', category: string) => {
-  const saved = localStorage.getItem('customCategories');
-  const customCategories = saved ? JSON.parse(saved) : { income: [], expense: [] };
-  
-  if (!customCategories[type].includes(category)) {
-    customCategories[type].push(category);
-    localStorage.setItem('customCategories', JSON.stringify(customCategories));
-  }
-};
-
-export const deleteCustomCategory = (type: 'income' | 'expense', category: string) => {
-  if (DEFAULT_CATEGORIES[type].includes(category)) return; // Cannot delete default
-  
-  const saved = localStorage.getItem('customCategories');
-  const customCategories = saved ? JSON.parse(saved) : { income: [], expense: [] };
-  
-  customCategories[type] = customCategories[type].filter((c: string) => c !== category);
-  localStorage.setItem('customCategories', JSON.stringify(customCategories));
+export const isDefaultCategory = (type: 'income' | 'expense', category: string): boolean => {
+  return DEFAULT_CATEGORIES[type].includes(category);
 };

@@ -1,33 +1,26 @@
 import { useState, useEffect } from 'react';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import { useTransactions } from './hooks/useTransactions';
-import TransactionForm from './components/TransactionForm';
-import TransactionList from './components/TransactionList';
-import Balance from './components/Balance';
-import Chart from './components/Chart';
-import QuickStats from './components/QuickStats';
-import BudgetTracker from './components/BudgetTracker';
-import SavingsGoals from './components/SavingsGoals';
-import SpendingTrends from './components/SpendingTrends';
-import CategoryBreakdown from './components/CategoryBreakdown';
-import FinancialHealth from './components/FinancialHealth';
-import SpendingInsights from './components/SpendingInsights';
-import DashboardCustomizer, { DashboardCard } from './components/DashboardCustomizer';
-import DraggableCard from './components/DraggableCard';
+import { useCustomCategories } from './hooks/useCustomCategories';
+import { DashboardCard } from './components/DashboardCustomizer';
+import Dashboard from './pages/Dashboard';
+import Settings from './pages/Settings';
 
 function App() {
-  const { transactions, loading, addTransaction, editTransaction, deleteTransaction } = useTransactions();
-  const [viewMode, setViewMode] = useState<'all' | 'month'>('month');
+  const { resetData } = useTransactions();
+  const { resetCustomCategories } = useCustomCategories();
+  const [showResetNotification, setShowResetNotification] = useState(false);
+  const location = useLocation();
+  const navigate = useNavigate();
   const [dashboardCards, setDashboardCards] = useState<DashboardCard[]>(() => {
     const defaultCards = [
       { id: 'balance', name: 'Balance', icon: '💰', enabled: true },
       { id: 'chart', name: 'Chart', icon: '📊', enabled: true },
       { id: 'quickstats', name: 'Quick Stats', icon: '⚡', enabled: true },
+      { id: 'categorycharts', name: 'Category Charts', icon: '📈', enabled: false },
       { id: 'health', name: 'Financial Health', icon: '🏥', enabled: false },
       { id: 'insights', name: 'Spending Insights', icon: '🔍', enabled: false },
       { id: 'trends', name: 'Spending Trends', icon: '📈', enabled: false },
-      { id: 'breakdown', name: 'Category Breakdown', icon: '📊', enabled: false },
       { id: 'budget', name: 'Budget Tracker', icon: '💰', enabled: false },
       { id: 'savings', name: 'Savings Goals', icon: '🎯', enabled: false },
       { id: 'form', name: 'Tambah Transaksi', icon: '➕', enabled: true },
@@ -38,30 +31,28 @@ function App() {
     if (saved) {
       const savedCards = JSON.parse(saved);
       // Ensure form and list cards exist and are enabled
-      const hasForm = savedCards.find((c: DashboardCard) => c.id === 'form');
-      const hasList = savedCards.find((c: DashboardCard) => c.id === 'list');
+      // Remove deprecated cards
+      const filteredCards = savedCards.filter((c: DashboardCard) => c.id !== 'breakdown');
+      
+      const hasForm = filteredCards.find((c: DashboardCard) => c.id === 'form');
+      const hasList = filteredCards.find((c: DashboardCard) => c.id === 'list');
+      const hasCategoryCharts = filteredCards.find((c: DashboardCard) => c.id === 'categorycharts');
       
       if (!hasForm) {
-        savedCards.push({ id: 'form', name: 'Tambah Transaksi', icon: '➕', enabled: true });
+        filteredCards.push({ id: 'form', name: 'Tambah Transaksi', icon: '➕', enabled: true });
       }
       if (!hasList) {
-        savedCards.push({ id: 'list', name: 'Riwayat Transaksi', icon: '📝', enabled: true });
+        filteredCards.push({ id: 'list', name: 'Riwayat Transaksi', icon: '📝', enabled: true });
+      }
+      if (!hasCategoryCharts) {
+        filteredCards.push({ id: 'categorycharts', name: 'Category Charts', icon: '📈', enabled: false });
       }
       
-      return savedCards;
+      return filteredCards;
     }
     
     return defaultCards;
   });
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
-
 
   useEffect(() => {
     localStorage.setItem('dashboardCards', JSON.stringify(dashboardCards));
@@ -74,175 +65,55 @@ function App() {
     ));
   }, []);
 
-
-
-  const getFilteredTransactions = () => {
-    if (viewMode === 'month') {
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-      return transactions.filter(t => {
-        const transactionDate = new Date(t.date + 'T00:00:00');
-        return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
-      });
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('reset') === 'success') {
+      setShowResetNotification(true);
+      // Clean up URL
+      navigate('/', { replace: true });
+      setTimeout(() => setShowResetNotification(false), 3000);
     }
-    return transactions;
+  }, [location, navigate]);
+
+  const handleResetData = () => {
+    resetData();
+    resetCustomCategories();
   };
-
-  const filteredTransactions = getFilteredTransactions();
-
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-    if (active.id !== over.id) {
-      setDashboardCards((items) => {
-        const oldIndex = items.findIndex(item => item.id === active.id);
-        const newIndex = items.findIndex(item => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  const renderCard = (card: DashboardCard) => {
-    if (!card.enabled) return null;
-    
-    switch (card.id) {
-      case 'balance':
-        return <Balance transactions={filteredTransactions} />;
-      case 'chart':
-        return <Chart transactions={filteredTransactions} />;
-      case 'quickstats':
-        return <QuickStats transactions={filteredTransactions} />;
-      case 'health':
-        return <FinancialHealth transactions={transactions} />;
-      case 'insights':
-        return <SpendingInsights transactions={transactions} />;
-      case 'trends':
-        return <SpendingTrends transactions={transactions} />;
-      case 'breakdown':
-        return <CategoryBreakdown transactions={filteredTransactions} />;
-      case 'budget':
-        return <BudgetTracker transactions={transactions} />;
-      case 'savings':
-        return <SavingsGoals />;
-      case 'form':
-        return <TransactionForm onAddTransaction={addTransaction} />;
-      case 'list':
-        return <TransactionList 
-          transactions={filteredTransactions} 
-          onEditTransaction={editTransaction}
-          onDeleteTransaction={deleteTransaction}
-        />;
-      default:
-        return null;
-    }
-  };
-
-  const enabledCards = dashboardCards.filter(card => card.enabled);
-  const sidebarCards = enabledCards.filter(card => ['balance', 'chart', 'budget', 'savings'].includes(card.id));
-  const mainCards = enabledCards.filter(card => !['balance', 'chart', 'budget', 'savings'].includes(card.id));
-  
-
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-slate-800 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-slate-800 p-3 sm:p-4 lg:p-8">
-      <div className="max-w-full sm:max-w-md lg:max-w-6xl mx-auto">
-        <div className="text-center py-4 lg:py-8 animate-fadeIn">
-          <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">💰 Uwang</h1>
-          <p className="text-gray-400 text-xs sm:text-sm lg:text-base">Kelola Keuangan Rumah Tangga</p>
-          
-          <div className="lg:hidden mt-2 mb-3">
-            <div className="bg-blue-900 bg-opacity-30 border border-blue-600 rounded-lg p-2 mx-4">
-              <p className="text-blue-300 text-xs">
-                💡 <strong>Tip:</strong> Akses dari desktop untuk fitur lengkap seperti analytics, budgeting, dan drag & drop!
-              </p>
-            </div>
-          </div>
-          
-          <div className="flex justify-center mt-3">
-            <div className="bg-slate-700 rounded-lg p-1 border border-slate-600 shadow-lg">
-              <button
-                onClick={() => setViewMode('month')}
-                className={`px-3 py-2 rounded text-xs sm:text-sm transition-all duration-300 ${
-                  viewMode === 'month' 
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' 
-                    : 'text-gray-400 hover:text-white hover:bg-slate-600'
-                }`}
-              >
-                📅 Bulan Ini
-              </button>
-              <button
-                onClick={() => setViewMode('all')}
-                className={`px-3 py-2 rounded text-xs sm:text-sm transition-all duration-300 ${
-                  viewMode === 'all' 
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' 
-                    : 'text-gray-400 hover:text-white hover:bg-slate-600'
-                }`}
-              >
-                📊 Semua
-              </button>
-            </div>
+    <>
+      <Routes>
+        <Route 
+          path="/" 
+          element={
+            <Dashboard 
+              dashboardCards={dashboardCards}
+              setDashboardCards={setDashboardCards}
+            />
+          } 
+        />
+        <Route 
+          path="/settings" 
+          element={
+            <Settings 
+              dashboardCards={dashboardCards}
+              onCardsChange={setDashboardCards}
+              onResetData={handleResetData}
+            />
+          } 
+        />
+      </Routes>
+      
+      {/* Global Reset Success Notification */}
+      {showResetNotification && (
+        <div className="fixed top-4 right-4 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <span>✅</span>
+            <span>Data berhasil direset!</span>
           </div>
         </div>
-        
-        <div className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-4 lg:space-y-0">
-          <div className="lg:col-span-1 space-y-4 lg:space-y-6 animate-slideIn">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={sidebarCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                {sidebarCards.map((card) => (
-                  <DraggableCard key={card.id} id={card.id}>
-                    {renderCard(card)}
-                  </DraggableCard>
-                ))}
-              </SortableContext>
-            </DndContext>
-          </div>
-          <div className="lg:col-span-3 space-y-4 lg:space-y-6 animate-slideIn" style={{animationDelay: '0.1s'}}>
-            {/* Mobile: Form always on top */}
-            <div className="lg:hidden space-y-4">
-              <TransactionForm onAddTransaction={addTransaction} />
-              <TransactionList 
-                transactions={filteredTransactions} 
-                onEditTransaction={editTransaction}
-                onDeleteTransaction={deleteTransaction}
-              />
-            </div>
-            
-            {/* Large devices: All cards draggable */}
-            <div className="hidden lg:block">
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={mainCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-6">
-                    {mainCards.map((card) => (
-                      <DraggableCard key={card.id} id={card.id}>
-                        {renderCard(card)}
-                      </DraggableCard>
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
-            </div>
-          </div>
-        </div>
-        
-        <div className="hidden lg:block">
-          <DashboardCustomizer 
-            cards={dashboardCards}
-            onCardsChange={setDashboardCards}
-          />
-        </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
 

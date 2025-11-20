@@ -3,6 +3,7 @@ import { Transaction, Budget } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
 import { getCategories } from '../utils/categories';
+import { useCustomCategories } from '../hooks/useCustomCategories';
 
 interface Props {
   transactions: Transaction[];
@@ -15,6 +16,7 @@ export default function BudgetTracker({ transactions }: Props) {
   });
   const [showAddBudget, setShowAddBudget] = useState(false);
   const [newBudget, setNewBudget] = useState({ category: '', limit: '' });
+  const { customCategories } = useCustomCategories();
 
   const currentMonth = new Date().toISOString().slice(0, 7);
   const currentBudgets = budgets.filter(b => b.month === currentMonth);
@@ -51,7 +53,7 @@ export default function BudgetTracker({ transactions }: Props) {
     return num.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
-  const expenseCategories = getCategories('expense');
+  const expenseCategories = getCategories('expense', customCategories);
 
   return (
     <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">

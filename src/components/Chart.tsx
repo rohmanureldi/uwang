@@ -1,9 +1,10 @@
 import { Doughnut } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import ChartDataLabels from 'chartjs-plugin-datalabels';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(ArcElement, Tooltip, Legend, ChartDataLabels);
 
 interface Props {
   transactions: Transaction[];
@@ -72,6 +73,16 @@ export default function Chart({ transactions }: Props) {
           label: (context: any) => {
             return `${context.label}: ${formatIDR(context.raw)}`;
           },
+        },
+      },
+      datalabels: {
+        color: '#ffffff',
+        font: {
+          weight: 'bold' as const,
+          size: 12,
+        },
+        formatter: (value: number) => {
+          return formatIDR(value);
         },
       },
     },
