@@ -1,14 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DashboardCustomizer, { DashboardCard } from '../components/DashboardCustomizer';
 
 interface Props {
-  dashboardCards: DashboardCard[];
-  onCardsChange: (cards: DashboardCard[]) => void;
   onResetData: () => void;
 }
 
-export default function Settings({ dashboardCards, onCardsChange, onResetData }: Props) {
+export default function Settings({ onResetData }: Props) {
   const navigate = useNavigate();
   const [showResetModal, setShowResetModal] = useState(false);
 
@@ -32,15 +29,6 @@ export default function Settings({ dashboardCards, onCardsChange, onResetData }:
         </div>
 
         <div className="space-y-6">
-          {/* Customize Section */}
-          <div className="bg-slate-700 rounded-xl p-6 border border-slate-600">
-            <h2 className="text-xl font-semibold text-white mb-4">Customize Dashboard</h2>
-            <DashboardCustomizer 
-              cards={dashboardCards}
-              onCardsChange={onCardsChange}
-            />
-          </div>
-
           {/* Reset Data Section */}
           <div className="bg-slate-700 rounded-xl p-6 border border-slate-600">
             <h2 className="text-xl font-semibold text-white mb-4">Data Management</h2>

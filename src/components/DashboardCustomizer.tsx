@@ -5,6 +5,8 @@ export interface DashboardCard {
   name: string;
   icon: string;
   enabled: boolean;
+  section?: 'sidebar' | 'main';
+  sectionIndex?: number;
 }
 
 interface Props {
@@ -14,17 +16,28 @@ interface Props {
 
 export default function DashboardCustomizer({ cards, onCardsChange }: Props) {
   const [sortedCards, setSortedCards] = useState<DashboardCard[]>([]);
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     setSortedCards([...cards].sort((a, b) => Number(b.enabled) - Number(a.enabled)));
-  }, []);
+  }, [cards]);
 
   const toggleCard = (id: string) => {
     const updated = sortedCards.map(card => 
       card.id === id ? { ...card, enabled: !card.enabled } : card
     );
     setSortedCards(updated);
-    onCardsChange(updated);
+    setHasChanges(true);
+  };
+
+  const handleSave = () => {
+    onCardsChange(sortedCards);
+    setHasChanges(false);
+  };
+
+  const handleReset = () => {
+    setSortedCards([...cards]);
+    setHasChanges(false);
   };
 
   return (
@@ -52,7 +65,23 @@ export default function DashboardCustomizer({ cards, onCardsChange }: Props) {
       </div>
       
       <div className="mt-4 pt-4 border-t border-slate-600">
-        <p className="text-xs text-gray-500">💡 Tip: Drag cards to reorder them on your dashboard</p>
+        <p className="text-xs text-gray-500 mb-3">💡 Tip: Drag cards to reorder them on your dashboard</p>
+        <div className="flex gap-2">
+          <button
+            onClick={handleSave}
+            disabled={!hasChanges}
+            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors text-sm"
+          >
+            Save Changes
+          </button>
+          <button
+            onClick={handleReset}
+            disabled={!hasChanges}
+            className="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors text-sm"
+          >
+            Reset
+          </button>
+        </div>
       </div>
     </div>
   );

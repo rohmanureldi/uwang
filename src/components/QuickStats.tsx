@@ -88,18 +88,27 @@ export default function QuickStats({ transactions }: Props) {
           })}
         </div>
       )}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         {stats.map((stat, index) => (
           <div 
             key={index} 
-            className="text-center p-3 bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg border border-slate-500 hover:scale-105 transition-all duration-300 animate-fadeIn"
+            className="p-3 bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg border border-slate-500 hover:scale-105 transition-all duration-300 animate-fadeIn"
             style={{animationDelay: `${index * 0.1}s`}}
           >
-            <div className="text-2xl mb-2 animate-bounce" style={{animationDelay: `${index * 0.2}s`, animationDuration: '2s'}}>{stat.icon}</div>
-            <p className="text-xs text-gray-400 mb-1">{stat.label}</p>
-            <p className="font-semibold text-gray-100 text-sm break-words bg-gradient-to-r from-white to-gray-300 bg-clip-text">{stat.value}</p>
+            <div className="flex items-start gap-2 mb-2">
+              <span className="text-lg flex-shrink-0">{stat.icon}</span>
+              <p className="text-gray-400 font-medium leading-tight" style={{
+                fontSize: stat.label.length > 15 ? '10px' : stat.label.length > 10 ? '11px' : '12px',
+                lineHeight: '1.2',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden'
+              }}>{stat.label}</p>
+            </div>
+            <p className="font-semibold text-gray-100 text-sm mb-1">{stat.value}</p>
             {stat.subtitle && (
-              <p className="text-xs text-gray-500 mt-1 truncate" title={stat.subtitle}>
+              <p className="text-xs text-gray-500 truncate" title={stat.subtitle}>
                 {stat.subtitle}
               </p>
             )}

@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { useTransactions } from '../hooks/useTransactions';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
@@ -15,7 +13,6 @@ import FinancialHealth from '../components/FinancialHealth';
 import SpendingInsights from '../components/SpendingInsights';
 import CategoryCharts from '../components/CategoryCharts';
 import { DashboardCard } from '../components/DashboardCustomizer';
-import DraggableCard from '../components/DraggableCard';
 
 interface Props {
   dashboardCards: DashboardCard[];
@@ -25,14 +22,12 @@ interface Props {
 export default function Dashboard({ dashboardCards, setDashboardCards }: Props) {
   const { transactions, loading, addTransaction, editTransaction, deleteTransaction } = useTransactions();
   const [viewMode, setViewMode] = useState<'all' | 'month'>('month');
+  const [editMode, setEditMode] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<{section: 'sidebar' | 'main', index: number} | null>(null);
+  const [swapMode, setSwapMode] = useState(false);
+  const [firstSwapCard, setFirstSwapCard] = useState<DashboardCard | null>(null);
   const navigate = useNavigate();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
 
   const getFilteredTransactions = () => {
     if (viewMode === 'month') {
@@ -49,21 +44,68 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
 
   const filteredTransactions = getFilteredTransactions();
 
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
-    if (active.id !== over.id) {
-      setDashboardCards((items) => {
-        const oldIndex = items.findIndex(item => item.id === active.id);
-        const newIndex = items.findIndex(item => item.id === over.id);
-        return arrayMove(items, oldIndex, newIndex);
+  const handleSlotClick = (section: 'sidebar' | 'main', index: number) => {
+    setSelectedSlot({ section, index });
+    setShowCardModal(true);
+  };
+
+  const handleCardSelect = (cardId: string) => {
+    if (!selectedSlot) return;
+    
+    const updatedCards = dashboardCards.map(card => {
+      if (card.id === cardId) {
+        return { ...card, enabled: true, section: selectedSlot.section, sectionIndex: selectedSlot.index };
+      }
+      return card;
+    });
+    
+    setDashboardCards(updatedCards);
+    setShowCardModal(false);
+    setSelectedSlot(null);
+  };
+
+  const handleCardRemove = (cardId: string) => {
+    const updatedCards = dashboardCards.map(card => 
+      card.id === cardId ? { ...card, enabled: false } : card
+    );
+    setDashboardCards(updatedCards);
+  };
+
+  const handleCardSwap = (card: DashboardCard) => {
+    if (!firstSwapCard) {
+      setFirstSwapCard(card);
+    } else {
+      const updatedCards = dashboardCards.map(c => {
+        if (c.id === firstSwapCard.id) {
+          return { ...c, section: card.section, sectionIndex: card.sectionIndex };
+        }
+        if (c.id === card.id) {
+          return { ...c, section: firstSwapCard.section, sectionIndex: firstSwapCard.sectionIndex };
+        }
+        return c;
       });
+      setDashboardCards(updatedCards);
+      setFirstSwapCard(null);
     }
   };
 
-  const renderCard = (card: DashboardCard) => {
-    if (!card.enabled) return null;
+  const renderCard = (card: DashboardCard | null, section: 'sidebar' | 'main', index: number) => {
+    if (!card) {
+      // Empty slot placeholder
+      if (!editMode) return null;
+      return (
+        <div 
+          onClick={() => handleSlotClick(section, index)}
+          className="bg-slate-600 border-2 border-dashed border-slate-500 rounded-xl p-6 text-center cursor-pointer hover:border-indigo-500 hover:bg-slate-500 transition-all"
+        >
+          <div className="text-gray-400 text-2xl mb-2">+</div>
+          <p className="text-gray-400 text-sm">Add Card</p>
+        </div>
+      );
+    }
     
-    switch (card.id) {
+    const cardContent = (() => {
+      switch (card.id) {
       case 'balance':
         return <Balance transactions={filteredTransactions} />;
       case 'chart':
@@ -85,19 +127,62 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       case 'form':
         return <TransactionForm onAddTransaction={addTransaction} />;
       case 'list':
+        const isInSidebar = sidebarSlots.some(c => c?.id === 'list');
         return <TransactionList 
           transactions={filteredTransactions} 
           onEditTransaction={editTransaction}
           onDeleteTransaction={deleteTransaction}
+          isInSidebar={isInSidebar}
         />;
-      default:
-        return null;
-    }
+        default:
+          return null;
+      }
+    })();
+
+    return (
+      <div className={`relative ${swapMode && firstSwapCard?.id === card.id ? 'ring-2 ring-blue-500' : ''}`}>
+        {cardContent}
+        {editMode && (
+          <div className="absolute top-2 right-2 flex gap-1 z-10">
+            {swapMode ? (
+              <button
+                onClick={() => handleCardSwap(card)}
+                className={`rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors ${
+                  firstSwapCard?.id === card.id 
+                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
+                {firstSwapCard?.id === card.id ? '1' : '↔'}
+              </button>
+            ) : (
+              <button
+                onClick={() => handleCardRemove(card.id)}
+                className="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors"
+              >
+                ×
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
   };
 
   const enabledCards = dashboardCards.filter(card => card.enabled);
-  const sidebarCards = enabledCards.filter(card => ['balance', 'chart', 'budget', 'savings'].includes(card.id));
-  const mainCards = enabledCards.filter(card => !['balance', 'chart', 'budget', 'savings'].includes(card.id));
+  const disabledCards = dashboardCards.filter(card => !card.enabled);
+  
+  // Separate cards by section
+  const sidebarCards = enabledCards.filter(card => card.section === 'sidebar').sort((a, b) => (a.sectionIndex || 0) - (b.sectionIndex || 0));
+  const mainCards = enabledCards.filter(card => card.section === 'main').sort((a, b) => (a.sectionIndex || 0) - (b.sectionIndex || 0));
+  
+  // Create arrays with placeholders for empty slots
+  const sidebarSlots = editMode && sidebarCards.length === 0 
+    ? [null] 
+    : [...sidebarCards, ...(editMode ? [null] : [])];
+  const mainSlots = editMode && mainCards.length === 0 
+    ? [null] 
+    : [...mainCards, ...(editMode ? [null] : [])];
 
   if (loading) {
     return (
@@ -157,20 +242,55 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 ⚙️ Settings
               </div>
             </div>
+            
+            <div className="flex gap-2">
+              {editMode && (
+                <div 
+                  onClick={() => {
+                    setSwapMode(!swapMode);
+                    setFirstSwapCard(null);
+                  }}
+                  className={`rounded-lg p-1 border border-slate-600 shadow-lg cursor-pointer transition-colors ${
+                    swapMode ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-700 hover:bg-slate-600'
+                  }`}
+                >
+                  <div className={`px-3 py-2 text-xs sm:text-sm transition-colors select-none ${
+                    swapMode ? 'text-white' : 'text-gray-400 hover:text-white'
+                  }`}>
+                    ↔️ {swapMode ? 'Remove Mode' : 'Swap Mode'}
+                  </div>
+                </div>
+              )}
+              <div 
+                onClick={async () => {
+                  if (editMode) {
+                    await setDashboardCards([...dashboardCards]);
+                    setSwapMode(false);
+                    setFirstSwapCard(null);
+                  }
+                  setEditMode(!editMode);
+                }}
+                className={`rounded-lg p-1 border border-slate-600 shadow-lg cursor-pointer transition-colors ${
+                  editMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-700 hover:bg-slate-600'
+                }`}
+              >
+                <div className={`px-3 py-2 text-xs sm:text-sm transition-colors select-none ${
+                  editMode ? 'text-white' : 'text-gray-400 hover:text-white'
+                }`}>
+                  ✏️ {editMode ? 'Done' : 'Edit'}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         
         <div className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-4 lg:space-y-0">
           <div className="lg:col-span-1 space-y-4 lg:space-y-6 animate-slideIn">
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={sidebarCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                {sidebarCards.map((card) => (
-                  <DraggableCard key={card.id} id={card.id}>
-                    {renderCard(card)}
-                  </DraggableCard>
-                ))}
-              </SortableContext>
-            </DndContext>
+            {sidebarSlots.map((card, index) => (
+              <div key={`sidebar-${index}`}>
+                {renderCard(card, 'sidebar', card ? card.sectionIndex || index : sidebarCards.length)}
+              </div>
+            ))}
           </div>
           <div className="lg:col-span-3 space-y-4 lg:space-y-6 animate-slideIn" style={{animationDelay: '0.1s'}}>
             {/* Mobile: Form always on top */}
@@ -180,25 +300,47 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 transactions={filteredTransactions} 
                 onEditTransaction={editTransaction}
                 onDeleteTransaction={deleteTransaction}
+                isInSidebar={false}
               />
             </div>
             
-            {/* Large devices: All cards draggable */}
-            <div className="hidden lg:block">
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={mainCards.map(c => c.id)} strategy={verticalListSortingStrategy}>
-                  <div className="space-y-6">
-                    {mainCards.map((card) => (
-                      <DraggableCard key={card.id} id={card.id}>
-                        {renderCard(card)}
-                      </DraggableCard>
-                    ))}
-                  </div>
-                </SortableContext>
-              </DndContext>
+            {/* Large devices: All cards */}
+            <div className="hidden lg:block space-y-6">
+              {mainSlots.map((card, index) => (
+                <div key={`main-${index}`}>
+                  {renderCard(card, 'main', card ? card.sectionIndex || index : mainCards.length)}
+                </div>
+              ))}
             </div>
           </div>
         </div>
+        
+        {/* Card Selection Modal */}
+        {showCardModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(10px)' }}>
+            <div className="bg-slate-700 rounded-xl p-6 max-w-md w-full border border-slate-600">
+              <h3 className="text-lg font-semibold text-white mb-4">Select Card</h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {dashboardCards.filter(card => !card.enabled || card.section === undefined).map((card) => (
+                  <button
+                    key={card.id}
+                    onClick={() => handleCardSelect(card.id)}
+                    className="w-full flex items-center gap-3 p-3 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors text-left"
+                  >
+                    <span className="text-lg">{card.icon}</span>
+                    <span className="text-gray-100">{card.name}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowCardModal(false)}
+                className="mt-4 w-full px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

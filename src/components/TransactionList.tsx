@@ -8,15 +8,17 @@ interface Props {
   transactions: Transaction[];
   onEditTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => void;
   onDeleteTransaction: (id: string) => void;
+  isInSidebar?: boolean;
 }
 
-export default function TransactionList({ transactions, onEditTransaction, onDeleteTransaction }: Props) {
+export default function TransactionList({ transactions, onEditTransaction, onDeleteTransaction, isInSidebar = false }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterCategory, setFilterCategory] = useState<string>('');
+  const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
   const [editForm, setEditForm] = useState({
     amount: '',
     description: '',
@@ -109,175 +111,360 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
 
   return (
     <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600">
-      <h3 className="font-semibold text-gray-100 mb-4 text-lg">Riwayat Transaksi</h3>
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-semibold text-gray-100 text-lg">Riwayat Transaksi</h3>
+        
+        {/* View Mode Toggle - Hidden in sidebar */}
+        {!isInSidebar && (
+          <div className="bg-slate-600 rounded-lg p-1 border border-slate-500">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1 rounded text-xs transition-all ${
+                viewMode === 'list' 
+                  ? 'bg-indigo-600 text-white shadow-sm' 
+                  : 'text-gray-400 hover:text-white hover:bg-slate-500'
+              }`}
+            >
+              📋 List
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1 rounded text-xs transition-all ${
+                viewMode === 'table' 
+                  ? 'bg-indigo-600 text-white shadow-sm' 
+                  : 'text-gray-400 hover:text-white hover:bg-slate-500'
+              }`}
+            >
+              📊 Table
+            </button>
+          </div>
+        )}
+      </div>
       
-      <div className="flex justify-between items-center gap-2 mb-4 text-sm">
+      <div className={`flex justify-between items-center gap-2 mb-4 ${isInSidebar ? 'text-xs' : 'text-sm'}`}>
         <div className="flex items-center gap-2">
           <span className="text-gray-400">Filter:</span>
           <div className="relative">
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className="pl-3 pr-8 py-2 border border-slate-600 bg-slate-700 text-gray-100 rounded appearance-none"
+              className={`border border-slate-600 bg-slate-700 text-gray-100 rounded appearance-none ${
+                isInSidebar ? 'pl-2 pr-6 py-1 text-xs' : 'pl-3 pr-8 py-2'
+              }`}
             >
-              <option value="">Semua ({transactions.length})</option>
+              <option value="">{isInSidebar ? 'Semua' : `Semua (${transactions.length})`}</option>
               {categories.map(cat => (
-                <option key={cat} value={cat}>{cat} ({categoryCount[cat]})</option>
+                <option key={cat} value={cat}>{isInSidebar ? cat : `${cat} (${categoryCount[cat]})`}</option>
               ))}
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`text-gray-400 ${isInSidebar ? 'w-2 h-2' : 'w-3 h-3'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-gray-400">Urut:</span>
+          {!isInSidebar && <span className="text-gray-400">Urut:</span>}
           <button
             onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-            className="px-3 py-2 border border-slate-600 bg-slate-700 text-gray-100 rounded hover:bg-slate-600 transition-colors flex items-center gap-1"
+            className={`border border-slate-600 bg-slate-700 text-gray-100 rounded hover:bg-slate-600 transition-colors flex items-center gap-1 ${
+              isInSidebar ? 'px-2 py-1 text-xs' : 'px-3 py-2'
+            }`}
           >
-            {sortOrder === 'desc' ? '↓ Terbaru' : '↑ Terlama'}
+            {sortOrder === 'desc' ? (isInSidebar ? '↓' : '↓ Terbaru') : (isInSidebar ? '↑' : '↑ Terlama')}
           </button>
         </div>
       </div>
       
-      <div className="space-y-6 max-h-96 lg:max-h-[500px] overflow-y-auto">
-        {Object.entries(groupedTransactions).map(([dateGroup, groupTransactions], index) => (
-          <div key={dateGroup} className="animate-fadeIn" style={{animationDelay: `${index * 0.1}s`}}>
-            {index > 0 && <div className="border-t border-slate-600 mb-4"></div>}
-            <h4 className="font-semibold text-gray-100 mb-3 text-base bg-slate-600 px-3 py-2 rounded-lg transition-all ">{dateGroup}</h4>
-            <div className="space-y-3">
-              {groupTransactions.map((transaction, txIndex) => (
-          <div key={transaction.id} className="border-b border-slate-600 last:border-b-0 pb-3 last:pb-0 animate-fadeIn transition-all hover:bg-opacity-30 rounded-lg px-2 py-1" style={{animationDelay: `${(index * 0.1) + (txIndex * 0.05)}s`}}>
-            {editingId === transaction.id ? (
+      {(isInSidebar || viewMode === 'list') ? (
+        <div className="space-y-6 max-h-96 lg:max-h-[500px] overflow-y-auto">
+          {Object.entries(groupedTransactions).map(([dateGroup, groupTransactions], index) => (
+            <div key={dateGroup} className="animate-fadeIn" style={{animationDelay: `${index * 0.1}s`}}>
+              {index > 0 && <div className="border-t border-slate-600 mb-4"></div>}
+              <h4 className={`font-semibold text-gray-100 mb-3 bg-slate-600 px-3 py-2 rounded-lg transition-all ${
+                isInSidebar ? 'text-sm' : 'text-base'
+              }`}>{dateGroup}</h4>
               <div className="space-y-3">
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2">
+                {groupTransactions.map((transaction, txIndex) => (
+            <div key={transaction.id} className="border-b border-slate-600 last:border-b-0 pb-3 last:pb-0 animate-fadeIn transition-all hover:bg-opacity-30 rounded-lg px-2 py-1" style={{animationDelay: `${(index * 0.1) + (txIndex * 0.05)}s`}}>
+              {editingId === transaction.id ? (
+                <div className="space-y-3">
+                  <div className="flex gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="income"
+                        checked={editForm.type === 'income'}
+                        onChange={(e) => setEditForm({...editForm, type: e.target.value as 'income', category: ''})}
+                      />
+                      <span className="text-sm text-green-400">Pemasukan</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        value="expense"
+                        checked={editForm.type === 'expense'}
+                        onChange={(e) => setEditForm({...editForm, type: e.target.value as 'expense', category: ''})}
+                      />
+                      <span className="text-sm text-red-400">Pengeluaran</span>
+                    </label>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
                     <input
-                      type="radio"
-                      value="income"
-                      checked={editForm.type === 'income'}
-                      onChange={(e) => setEditForm({...editForm, type: e.target.value as 'income', category: ''})}
+                      type="text"
+                      value={editForm.amount}
+                      onChange={(e) => handleEditAmountChange(e.target.value)}
+                      className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
+                      placeholder="Jumlah"
                     />
-                    <span className="text-sm text-green-400">Pemasukan</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      value="expense"
-                      checked={editForm.type === 'expense'}
-                      onChange={(e) => setEditForm({...editForm, type: e.target.value as 'expense', category: ''})}
-                    />
-                    <span className="text-sm text-red-400">Pengeluaran</span>
-                  </label>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryModal(true)}
+                      className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm text-left hover:bg-slate-500"
+                    >
+                      {editForm.category || 'Pilih Kategori'}
+                    </button>
+                  </div>
                   <input
                     type="text"
-                    value={editForm.amount}
-                    onChange={(e) => handleEditAmountChange(e.target.value)}
-                    className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
-                    placeholder="Jumlah"
+                    value={editForm.description}
+                    onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                    className="w-full px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
+                    placeholder="Deskripsi"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowCategoryModal(true)}
-                    className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm text-left hover:bg-slate-500"
-                  >
-                    {editForm.category || 'Pilih Kategori'}
-                  </button>
-                </div>
-                <input
-                  type="text"
-                  value={editForm.description}
-                  onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-                  className="w-full px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
-                  placeholder="Deskripsi"
-                />
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="date"
-                    value={editForm.date}
-                    onChange={(e) => setEditForm({...editForm, date: e.target.value})}
-                    className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm cursor-pointer"
-                    style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
-                    onFocus={(e) => e.target.showPicker?.()}
-                  />
-                  <input
-                    type="time"
-                    value={editForm.time}
-                    onChange={(e) => setEditForm({...editForm, time: e.target.value})}
-                    className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm cursor-pointer"
-                    style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
-                    onFocus={(e) => e.target.showPicker?.()}
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => saveEdit(transaction.id)}
-                    className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                  >
-                    Simpan
-                  </button>
-                  <button
-                    onClick={cancelEdit}
-                    className="px-3 py-1 bg-slate-500 text-white rounded text-sm hover:bg-slate-400"
-                  >
-                    Batal
-                  </button>
-                </div>
-                
-                {errorMessage && (
-                  <div className="mt-2 p-2 bg-red-600 bg-opacity-20 border border-red-600 text-red-400 rounded text-sm animate-fadeIn">
-                    {errorMessage}
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      type="date"
+                      value={editForm.date}
+                      onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                      className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm cursor-pointer"
+                      style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+                      onFocus={(e) => e.target.showPicker?.()}
+                    />
+                    <input
+                      type="time"
+                      value={editForm.time}
+                      onChange={(e) => setEditForm({...editForm, time: e.target.value})}
+                      className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm cursor-pointer"
+                      style={{ colorScheme: 'dark', WebkitAppearance: 'none', MozAppearance: 'textfield' }}
+                      onFocus={(e) => e.target.showPicker?.()}
+                    />
                   </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-100 text-sm sm:text-base truncate">{transaction.description}</p>
-                  <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-400">
-                    <span className="flex items-center gap-1">
-                      <span>{getCategoryIcon(transaction.category)}</span>
-                      <span>{transaction.category}</span>
-                    </span>
-                    {transaction.time && <span>• {transaction.time}</span>}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`font-semibold text-sm sm:text-base whitespace-nowrap ${
-                    transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {transaction.type === 'income' ? '+' : '-'}{formatIDR(Math.abs(transaction.amount))}
-                  </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-2">
                     <button
-                      onClick={() => startEdit(transaction)}
-                      className="p-1 text-primary-400 hover:bg-slate-600 rounded"
-                      title="Edit"
+                      onClick={() => saveEdit(transaction.id)}
+                      className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
                     >
-                      ✏️
+                      Simpan
                     </button>
                     <button
-                      onClick={() => setDeleteConfirmId(transaction.id)}
-                      className="p-1 text-red-400 hover:bg-slate-600 rounded"
-                      title="Delete"
+                      onClick={cancelEdit}
+                      className="px-3 py-1 bg-slate-500 text-white rounded text-sm hover:bg-slate-400"
                     >
-                      🗑️
+                      Batal
                     </button>
                   </div>
+                  
+                  {errorMessage && (
+                    <div className="mt-2 p-2 bg-red-600 bg-opacity-20 border border-red-600 text-red-400 rounded text-sm animate-fadeIn">
+                      {errorMessage}
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <div className={`flex items-center justify-between ${isInSidebar ? 'gap-2' : 'gap-4'}`}>
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-medium text-gray-100 truncate ${
+                      isInSidebar ? 'text-xs' : 'text-sm sm:text-base'
+                    }`}>{transaction.description || (transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran')}</p>
+                    <div className={`flex items-center gap-2 text-gray-400 ${
+                      isInSidebar ? 'text-xs' : 'text-xs sm:text-sm'
+                    }`}>
+                      <span className="flex items-center gap-1">
+                        <span>{getCategoryIcon(transaction.category)}</span>
+                        <span className={isInSidebar ? 'truncate max-w-16' : ''}>{transaction.category}</span>
+                      </span>
+                      {transaction.time && !isInSidebar && <span>• {transaction.time}</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className={`font-semibold whitespace-nowrap ${
+                      transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
+                    } ${isInSidebar ? 'text-xs' : 'text-sm sm:text-base'}`}>
+                      {transaction.type === 'income' ? '+' : '-'}{formatIDR(Math.abs(transaction.amount))}
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => startEdit(transaction)}
+                        className={`text-primary-400 hover:bg-slate-600 rounded ${
+                          isInSidebar ? 'p-0.5 text-xs' : 'p-1'
+                        }`}
+                        title="Edit"
+                      >
+                        ✏️
+                      </button>
+                      <button
+                        onClick={() => setDeleteConfirmId(transaction.id)}
+                        className={`text-red-400 hover:bg-slate-600 rounded ${
+                          isInSidebar ? 'p-0.5 text-xs' : 'p-1'
+                        }`}
+                        title="Delete"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+                ))}
               </div>
-            )}
-          </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="max-h-96 lg:max-h-[500px] overflow-auto">
+          <div className="min-w-full">
+            <div className="bg-slate-600 rounded-t-lg">
+              <div className="grid grid-cols-5 gap-4 px-4 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider">
+                <div>Tanggal</div>
+                <div>Deskripsi</div>
+                <div>Kategori</div>
+                <div className="text-right">Jumlah</div>
+                <div className="text-center">Aksi</div>
+              </div>
+            </div>
+            <div className="bg-slate-700 rounded-b-lg">
+              {filteredAndSortedTransactions.map((transaction, index) => (
+                <div key={transaction.id} className={`grid grid-cols-5 gap-4 px-4 py-3 text-sm border-b border-slate-600 last:border-b-0 hover:bg-slate-600 transition-colors animate-fadeIn ${
+                  editingId === transaction.id ? 'bg-slate-600' : ''
+                }`} style={{animationDelay: `${index * 0.05}s`}}>
+                  {editingId === transaction.id ? (
+                    <>
+                      <div className="col-span-5 space-y-3">
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              value="income"
+                              checked={editForm.type === 'income'}
+                              onChange={(e) => setEditForm({...editForm, type: e.target.value as 'income', category: ''})}
+                            />
+                            <span className="text-sm text-green-400">Pemasukan</span>
+                          </label>
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              value="expense"
+                              checked={editForm.type === 'expense'}
+                              onChange={(e) => setEditForm({...editForm, type: e.target.value as 'expense', category: ''})}
+                            />
+                            <span className="text-sm text-red-400">Pengeluaran</span>
+                          </label>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            value={editForm.amount}
+                            onChange={(e) => handleEditAmountChange(e.target.value)}
+                            className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm"
+                            placeholder="Jumlah"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowCategoryModal(true)}
+                            className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm text-left hover:bg-slate-500"
+                          >
+                            {editForm.category || 'Pilih Kategori'}
+                          </button>
+                        </div>
+                        <input
+                          type="text"
+                          value={editForm.description}
+                          onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                          className="w-full px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm"
+                          placeholder="Deskripsi"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="date"
+                            value={editForm.date}
+                            onChange={(e) => setEditForm({...editForm, date: e.target.value})}
+                            className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm"
+                            style={{ colorScheme: 'dark' }}
+                          />
+                          <input
+                            type="time"
+                            value={editForm.time}
+                            onChange={(e) => setEditForm({...editForm, time: e.target.value})}
+                            className="px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm"
+                            style={{ colorScheme: 'dark' }}
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => saveEdit(transaction.id)}
+                            className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                          >
+                            Simpan
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="px-3 py-1 bg-slate-500 text-white rounded text-sm hover:bg-slate-400"
+                          >
+                            Batal
+                          </button>
+                        </div>
+                        {errorMessage && (
+                          <div className="p-2 bg-red-600 bg-opacity-20 border border-red-600 text-red-400 rounded text-sm">
+                            {errorMessage}
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-gray-300">
+                        <div>{new Date(transaction.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</div>
+                        {transaction.time && <div className="text-xs text-gray-400">{transaction.time}</div>}
+                      </div>
+                      <div className="text-gray-100 truncate" title={transaction.description || (transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran')}>
+                        {transaction.description || (transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran')}
+                      </div>
+                      <div className="flex items-center gap-1 text-gray-300">
+                        <span>{getCategoryIcon(transaction.category)}</span>
+                        <span className="truncate">{transaction.category}</span>
+                      </div>
+                      <div className={`text-right font-semibold ${
+                        transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {transaction.type === 'income' ? '+' : '-'}{formatIDR(Math.abs(transaction.amount))}
+                      </div>
+                      <div className="flex justify-center gap-1">
+                        <button
+                          onClick={() => startEdit(transaction)}
+                          className="p-1 text-indigo-400 hover:bg-slate-600 rounded"
+                          title="Edit"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmId(transaction.id)}
+                          className="p-1 text-red-400 hover:bg-slate-600 rounded"
+                          title="Delete"
+                        >
+                          🗑️
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
               ))}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
 
       <CategoryModal
         isOpen={showCategoryModal}
