@@ -21,28 +21,16 @@ interface Props {
 
 export default function Dashboard({ dashboardCards, setDashboardCards }: Props) {
   const { transactions, loading, addTransaction, editTransaction, deleteTransaction } = useTransactions();
-  const [viewMode, setViewMode] = useState<'all' | 'month'>('month');
+
   const [editMode, setEditMode] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{section: 'sidebar' | 'main', index: number} | null>(null);
   const [swapMode, setSwapMode] = useState(false);
   const [firstSwapCard, setFirstSwapCard] = useState<DashboardCard | null>(null);
+  const [showTransactionModal, setShowTransactionModal] = useState(false);
   const navigate = useNavigate();
 
-  const getFilteredTransactions = () => {
-    if (viewMode === 'month') {
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-      return transactions.filter(t => {
-        const transactionDate = new Date(t.date + 'T00:00:00');
-        return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
-      });
-    }
-    return transactions;
-  };
-
-  const filteredTransactions = getFilteredTransactions();
+  const filteredTransactions = transactions;
 
   const handleSlotClick = (section: 'sidebar' | 'main', index: number) => {
     setSelectedSlot({ section, index });
@@ -109,7 +97,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       case 'balance':
         return <Balance transactions={filteredTransactions} />;
       case 'chart':
-        return <Chart transactions={filteredTransactions} />;
+        return window.innerWidth >= 1024 ? <Chart transactions={filteredTransactions} /> : null;
       case 'quickstats':
         return <QuickStats transactions={filteredTransactions} />;
       case 'categorycharts':
@@ -141,7 +129,9 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
 
     return (
       <div className={`relative ${swapMode && firstSwapCard?.id === card.id ? 'ring-2 ring-blue-500' : ''}`}>
-        {cardContent}
+        <div className={editMode ? 'pointer-events-none' : ''}>
+          {cardContent}
+        </div>
         {editMode && (
           <div className="absolute top-2 right-2 flex gap-1 z-10">
             {swapMode ? (
@@ -172,8 +162,11 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
   const enabledCards = dashboardCards.filter(card => card.enabled);
   const disabledCards = dashboardCards.filter(card => !card.enabled);
   
-  // Separate cards by section
-  const sidebarCards = enabledCards.filter(card => card.section === 'sidebar').sort((a, b) => (a.sectionIndex || 0) - (b.sectionIndex || 0));
+  // Separate cards by section (filter out balance on mobile for sidebar)
+  const sidebarCards = enabledCards.filter(card => {
+    if (window.innerWidth < 1024 && card.id === 'balance') return false;
+    return card.section === 'sidebar';
+  }).sort((a, b) => (a.sectionIndex || 0) - (b.sectionIndex || 0));
   const mainCards = enabledCards.filter(card => card.section === 'main').sort((a, b) => (a.sectionIndex || 0) - (b.sectionIndex || 0));
   
   // Create arrays with placeholders for empty slots
@@ -198,42 +191,41 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
   return (
     <div className="min-h-screen bg-slate-800 p-3 sm:p-4 lg:p-8">
       <div className="max-w-full sm:max-w-md lg:max-w-6xl mx-auto">
-        <div className="text-center py-4 lg:py-8 animate-fadeIn">
+        {/* Mobile Top Bar */}
+        <div className="lg:hidden">
+          <div className="flex items-center justify-between p-4">
+            <div>
+              <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">💰 Uwang</h1>
+              <p className="text-sm text-gray-300">
+                {(() => {
+                  const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+                  const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+                  const balance = income - expense;
+                  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(balance);
+                })()
+                }
+              </p>
+            </div>
+            <button 
+              onClick={() => navigate('/settings')}
+              className="bg-slate-700 rounded-lg p-2 border border-slate-600 shadow-lg hover:bg-slate-600 transition-colors"
+            >
+              <span className="text-gray-400 hover:text-white text-lg">⚙️</span>
+            </button>
+          </div>
+          <div className="bg-blue-900 bg-opacity-30 border border-blue-600 rounded-lg p-2 mx-4 mb-4">
+            <p className="text-blue-300 text-xs">
+              💡 <strong>Tip:</strong> Akses dari desktop untuk fitur lengkap seperti analytics, budgeting, dan drag & drop!
+            </p>
+          </div>
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden lg:block text-center py-4 lg:py-8 animate-fadeIn">
           <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">💰 Uwang</h1>
           <p className="text-gray-400 text-xs sm:text-sm lg:text-base">Kelola Keuangan Rumah Tangga</p>
           
-          <div className="lg:hidden mt-2 mb-3">
-            <div className="bg-blue-900 bg-opacity-30 border border-blue-600 rounded-lg p-2 mx-4">
-              <p className="text-blue-300 text-xs">
-                💡 <strong>Tip:</strong> Akses dari desktop untuk fitur lengkap seperti analytics, budgeting, dan drag & drop!
-              </p>
-            </div>
-          </div>
-          
           <div className="flex justify-center items-center gap-4 mt-3">
-            <div className="bg-slate-700 rounded-lg p-1 border border-slate-600 shadow-lg">
-              <button
-                onClick={() => setViewMode('month')}
-                className={`px-3 py-2 rounded text-xs sm:text-sm transition-all duration-300 ${
-                  viewMode === 'month' 
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' 
-                    : 'text-gray-400 hover:text-white hover:bg-slate-600'
-                }`}
-              >
-                📅 Bulan Ini
-              </button>
-              <button
-                onClick={() => setViewMode('all')}
-                className={`px-3 py-2 rounded text-xs sm:text-sm transition-all duration-300 ${
-                  viewMode === 'all' 
-                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg' 
-                    : 'text-gray-400 hover:text-white hover:bg-slate-600'
-                }`}
-              >
-                📊 Semua
-              </button>
-            </div>
-            
             <div 
               onClick={() => navigate('/settings')}
               className="bg-slate-700 rounded-lg p-1 border border-slate-600 shadow-lg cursor-pointer hover:bg-slate-600 transition-colors"
@@ -293,9 +285,8 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             ))}
           </div>
           <div className="lg:col-span-3 space-y-4 lg:space-y-6 animate-slideIn" style={{animationDelay: '0.1s'}}>
-            {/* Mobile: Form always on top */}
+            {/* Mobile: Only TransactionList */}
             <div className="lg:hidden space-y-4">
-              <TransactionForm onAddTransaction={addTransaction} />
               <TransactionList 
                 transactions={filteredTransactions} 
                 onEditTransaction={editTransaction}
@@ -314,6 +305,48 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             </div>
           </div>
         </div>
+        
+        {/* Mobile Floating Add Button */}
+        <div className="lg:hidden fixed bottom-6 right-6 z-50">
+          <button
+            onClick={() => setShowTransactionModal(true)}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-colors"
+          >
+            <span className="text-2xl">+</span>
+          </button>
+        </div>
+        
+        {/* Mobile Transaction Form Modal */}
+        {showTransactionModal && (
+          <div 
+            className="lg:hidden fixed inset-0 flex items-end justify-center z-50"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(10px)' }}
+            onClick={() => setShowTransactionModal(false)}
+          >
+            <div 
+              className="bg-slate-700 rounded-t-xl w-full max-h-[80vh] overflow-y-auto border border-slate-500 shadow-2xl animate-scaleIn"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-slate-600 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-white">Tambah Transaksi</h3>
+                <button
+                  onClick={() => setShowTransactionModal(false)}
+                  className="text-gray-400 hover:text-white text-xl"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-4">
+                <TransactionForm 
+                  onAddTransaction={(transaction) => {
+                    addTransaction(transaction);
+                    setShowTransactionModal(false);
+                  }} 
+                />
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Card Selection Modal */}
         {showCardModal && (
