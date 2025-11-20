@@ -19,6 +19,11 @@ export function useTransactions() {
 
   const loadTransactions = async () => {
     try {
+      // Check if Supabase is configured
+      if (!supabase) {
+        throw new Error('Supabase not configured');
+      }
+      
       // Try Supabase first
       const { data, error } = await supabase
         .from('transactions')
@@ -57,7 +62,7 @@ export function useTransactions() {
   };
 
   const addTransaction = async (transactionData: Omit<Transaction, 'id'>) => {
-    if (useLocalStorage) {
+    if (useLocalStorage || !supabase) {
       const newTransaction: Transaction = {
         ...transactionData,
         id: Date.now().toString()
@@ -97,7 +102,7 @@ export function useTransactions() {
   };
 
   const editTransaction = async (id: string, transactionData: Omit<Transaction, 'id'>) => {
-    if (useLocalStorage) {
+    if (useLocalStorage || !supabase) {
       const updated = transactions.map(t => t.id === id ? { ...transactionData, id } : t);
       setTransactions(updated);
       localStorage.setItem('transactions', JSON.stringify(updated));
@@ -120,7 +125,7 @@ export function useTransactions() {
   };
 
   const deleteTransaction = async (id: string) => {
-    if (useLocalStorage) {
+    if (useLocalStorage || !supabase) {
       const updated = transactions.filter(t => t.id !== id);
       setTransactions(updated);
       localStorage.setItem('transactions', JSON.stringify(updated));
