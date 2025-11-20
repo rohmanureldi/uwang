@@ -32,6 +32,23 @@ export default function SpendingTrends({ transactions }: Props) {
     return { month: month.label, income, expenses };
   });
 
+  // Check if there's any data to display
+  const hasData = monthlyData.some(d => d.income > 0 || d.expenses > 0);
+  
+  if (!hasData) {
+    return (
+      <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
+        <h3 className="font-semibold text-gray-100 mb-4 text-lg">📈 Tren 6 Bulan</h3>
+        <div className="h-64 flex items-center justify-center">
+          <div className="text-center">
+            <div className="text-gray-400 text-4xl mb-2">📊</div>
+            <p className="text-gray-400 text-sm">Belum ada data untuk grafik tren</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const data = {
     labels: monthlyData.map(d => d.month),
     datasets: [
@@ -41,7 +58,10 @@ export default function SpendingTrends({ transactions }: Props) {
         borderColor: '#34d399',
         backgroundColor: 'rgba(52, 211, 153, 0.1)',
         tension: 0.4,
-        fill: true,
+        fill: false,
+        pointBackgroundColor: '#34d399',
+        pointBorderColor: '#34d399',
+        pointRadius: 4,
       },
       {
         label: 'Pengeluaran',
@@ -49,7 +69,10 @@ export default function SpendingTrends({ transactions }: Props) {
         borderColor: '#f87171',
         backgroundColor: 'rgba(248, 113, 113, 0.1)',
         tension: 0.4,
-        fill: true,
+        fill: false,
+        pointBackgroundColor: '#f87171',
+        pointBorderColor: '#f87171',
+        pointRadius: 4,
       }
     ],
   };

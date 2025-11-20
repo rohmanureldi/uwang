@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { Transaction } from './types';
+import { useTransactions } from './hooks/useTransactions';
 import TransactionForm from './components/TransactionForm';
 import TransactionList from './components/TransactionList';
 import Balance from './components/Balance';
@@ -17,7 +17,7 @@ import DashboardCustomizer, { DashboardCard } from './components/DashboardCustom
 import DraggableCard from './components/DraggableCard';
 
 function App() {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const { transactions, loading, addTransaction, editTransaction, deleteTransaction } = useTransactions();
   const [viewMode, setViewMode] = useState<'all' | 'month'>('month');
   const [dashboardCards, setDashboardCards] = useState<DashboardCard[]>(() => {
     const defaultCards = [
@@ -61,16 +61,7 @@ function App() {
     })
   );
 
-  useEffect(() => {
-    const saved = localStorage.getItem('transactions');
-    if (saved) {
-      setTransactions(JSON.parse(saved));
-    }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-  }, [transactions]);
 
   useEffect(() => {
     localStorage.setItem('dashboardCards', JSON.stringify(dashboardCards));
@@ -83,23 +74,7 @@ function App() {
     ));
   }, []);
 
-  const addTransaction = (transactionData: Omit<Transaction, 'id'>) => {
-    const newTransaction: Transaction = {
-      ...transactionData,
-      id: Date.now().toString()
-    };
-    setTransactions(prev => [newTransaction, ...prev]);
-  };
 
-  const editTransaction = (id: string, transactionData: Omit<Transaction, 'id'>) => {
-    setTransactions(prev => 
-      prev.map(t => t.id === id ? { ...transactionData, id } : t)
-    );
-  };
-
-  const deleteTransaction = (id: string) => {
-    setTransactions(prev => prev.filter(t => t.id !== id));
-  };
 
   const getFilteredTransactions = () => {
     if (viewMode === 'month') {
@@ -107,7 +82,7 @@ function App() {
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
       return transactions.filter(t => {
-        const transactionDate = new Date(t.date);
+        const transactionDate = new Date(t.date + 'T00:00:00');
         return transactionDate.getMonth() === currentMonth && transactionDate.getFullYear() === currentYear;
       });
     }
@@ -167,6 +142,17 @@ function App() {
   const mainCards = enabledCards.filter(card => !['balance', 'chart', 'budget', 'savings'].includes(card.id));
   
 
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-800 p-3 sm:p-4 lg:p-8">

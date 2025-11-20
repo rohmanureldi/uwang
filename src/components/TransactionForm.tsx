@@ -16,6 +16,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [amountError, setAmountError] = useState('');
   const [categoryError, setCategoryError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const formatNumber = (value: string) => {
     const num = value.replace(/\D/g, '');
@@ -23,8 +24,13 @@ export default function TransactionForm({ onAddTransaction }: Props) {
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const formatted = formatNumber(e.target.value);
-    setAmount(formatted);
+    const value = e.target.value;
+    // Only allow numbers and dots
+    if (value === '' || /^[0-9.]*$/.test(value.replace(/\./g, ''))) {
+      const formatted = formatNumber(value);
+      setAmount(formatted);
+      if (amountError) setAmountError('');
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -32,30 +38,44 @@ export default function TransactionForm({ onAddTransaction }: Props) {
     setAmountError('');
     setCategoryError('');
     
-    if (!amount || !category) {
-      if (!amount) {
-        setAmountError('Masukkan jumlah terlebih dahulu');
-        setTimeout(() => setAmountError(''), 3000);
-      }
-      if (!category) {
-        setCategoryError('Pilih kategori terlebih dahulu');
-        setTimeout(() => setCategoryError(''), 3000);
-      }
+    // Validate amount
+    const cleanAmount = amount.replace(/\./g, '');
+    const numericAmount = parseFloat(cleanAmount);
+    
+    if (!amount.trim() || isNaN(numericAmount) || numericAmount <= 0) {
+      setAmountError('Masukkan jumlah yang valid');
+      setTimeout(() => setAmountError(''), 3000);
+      return;
+    }
+    
+    if (!category.trim()) {
+      setCategoryError('Pilih kategori terlebih dahulu');
+      setTimeout(() => setCategoryError(''), 3000);
       return;
     }
 
-    onAddTransaction({
-      amount: parseFloat(amount.replace(/\./g, '')),
-      description,
-      category,
-      type,
-      date,
-      time
-    });
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      onAddTransaction({
+        amount: numericAmount,
+        description: description.trim(),
+        category: category.trim(),
+        type,
+        date,
+        time
+      });
 
-    setAmount('');
-    setDescription('');
-    setCategory('');
+      // Reset form on successful submission
+      setAmount('');
+      setDescription('');
+      setCategory('');
+    } catch (error) {
+      console.error('Error adding transaction:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -152,9 +172,10 @@ export default function TransactionForm({ onAddTransaction }: Props) {
 
         <button
           type="submit"
-          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 transition-all text-sm touch-manipulation min-h-[44px]"
+          disabled={isSubmitting}
+          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-all text-sm touch-manipulation min-h-[44px]"
         >
-          Tambah
+          {isSubmitting ? 'Menambah...' : 'Tambah'}
         </button>
       </form>
 
