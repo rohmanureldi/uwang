@@ -2,6 +2,7 @@ import { Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
+import { TrendingUp, BarChart3 } from 'lucide-react';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -29,20 +30,25 @@ export default function SpendingTrends({ transactions }: Props) {
     const monthTransactions = transactions.filter(t => t.date.startsWith(month.key));
     const income = monthTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
     const expenses = monthTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    return { month: month.label, income, expenses };
+    const balance = income - expenses;
+    return { month: month.label, balance, income, expenses };
   });
 
   // Check if there's any data to display
-  const hasData = monthlyData.some(d => d.income > 0 || d.expenses > 0);
+  const hasData = monthlyData.some(d => d.balance !== 0);
   
   if (!hasData) {
     return (
-      <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
-        <h3 className="font-semibold text-gray-100 mb-4 text-lg">📈 Tren 6 Bulan</h3>
+      <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn">
+        <h3 className="font-semibold text-gray-100 mb-4 text-lg flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-purple-400" /> Tren 6 Bulan
+        </h3>
         <div className="h-64 flex items-center justify-center">
           <div className="text-center">
-            <div className="text-gray-400 text-4xl mb-2">📊</div>
-            <p className="text-gray-400 text-sm">Belum ada data untuk grafik tren</p>
+            <div className="text-gray-300 text-4xl mb-2 flex justify-center">
+              <BarChart3 className="w-12 h-12" />
+            </div>
+            <p className="text-gray-300 text-sm">Belum ada data untuk grafik tren</p>
           </div>
         </div>
       </div>
@@ -53,26 +59,24 @@ export default function SpendingTrends({ transactions }: Props) {
     labels: monthlyData.map(d => d.month),
     datasets: [
       {
-        label: 'Pemasukan',
-        data: monthlyData.map(d => d.income),
-        borderColor: '#34d399',
-        backgroundColor: 'rgba(52, 211, 153, 0.1)',
+        label: 'Balance',
+        data: monthlyData.map(d => d.balance),
+        borderColor: '#8b5cf6',
+        backgroundColor: (context: any) => {
+          const ctx = context.chart.ctx;
+          const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+          gradient.addColorStop(0, 'rgba(139, 92, 246, 0.3)');
+          gradient.addColorStop(1, 'rgba(139, 92, 246, 0.05)');
+          return gradient;
+        },
         tension: 0.4,
-        fill: false,
-        pointBackgroundColor: '#34d399',
-        pointBorderColor: '#34d399',
-        pointRadius: 4,
-      },
-      {
-        label: 'Pengeluaran',
-        data: monthlyData.map(d => d.expenses),
-        borderColor: '#f87171',
-        backgroundColor: 'rgba(248, 113, 113, 0.1)',
-        tension: 0.4,
-        fill: false,
-        pointBackgroundColor: '#f87171',
-        pointBorderColor: '#f87171',
-        pointRadius: 4,
+        fill: true,
+        pointBackgroundColor: '#8b5cf6',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+        borderWidth: 3,
       }
     ],
   };
@@ -80,40 +84,74 @@ export default function SpendingTrends({ transactions }: Props) {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      intersect: false,
+      mode: 'index' as const,
+    },
     plugins: {
       legend: {
-        position: 'top' as const,
-        labels: { color: '#d1d5db', usePointStyle: true }
+        display: false
       },
       tooltip: {
-        backgroundColor: '#1e293b',
+        backgroundColor: 'rgba(17, 24, 39, 0.95)',
         titleColor: '#f1f5f9',
         bodyColor: '#f1f5f9',
-        borderColor: '#475569',
+        borderColor: '#6366f1',
         borderWidth: 1,
+        cornerRadius: 12,
+        padding: 12,
         callbacks: {
-          label: (context: any) => `${context.dataset.label}: ${formatIDR(context.raw)}`
+          title: (context: any) => context[0].label,
+          label: (context: any) => {
+            const dataIndex = context.dataIndex;
+            const monthData = monthlyData[dataIndex];
+            return [
+              `Balance: ${formatIDR(monthData.balance)}`,
+              `Income: ${formatIDR(monthData.income)}`,
+              `Expenses: ${formatIDR(monthData.expenses)}`
+            ];
+          }
         }
       }
     },
     scales: {
       y: {
         beginAtZero: true,
-        ticks: { color: '#9ca3af' },
-        grid: { color: '#374151' }
+        ticks: { 
+          color: '#9ca3af',
+          font: { size: 11 },
+          maxTicksLimit: 5
+        },
+        grid: { 
+          color: 'rgba(55, 65, 81, 0.3)',
+          drawBorder: false
+        },
+        border: { display: false }
       },
       x: {
-        ticks: { color: '#9ca3af' },
-        grid: { color: '#374151' }
+        ticks: { 
+          color: '#9ca3af',
+          font: { size: 11 }
+        },
+        grid: { 
+          display: false
+        },
+        border: { display: false }
       }
     }
   };
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
-      <h3 className="font-semibold text-gray-100 mb-4 text-lg">📈 Tren 6 Bulan</h3>
-      <div className="h-64">
-        <Line data={data} options={options} />
+    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-2xl border border-gray-700 animate-scaleIn relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-pink-500/5 pointer-events-none"></div>
+      <div className="relative z-10">
+        <h3 className="font-semibold text-gray-100 mb-4 text-lg flex items-center gap-2">
+          <TrendingUp className="w-5 h-5 text-purple-400" /> Tren 6 Bulan
+        </h3>
+        <div className="h-64 relative">
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/20 to-transparent pointer-events-none rounded-lg"></div>
+          <Line data={data} options={options} />
+        </div>
       </div>
     </div>
   );

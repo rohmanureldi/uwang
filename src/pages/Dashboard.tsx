@@ -13,6 +13,7 @@ import FinancialHealth from '../components/FinancialHealth';
 import SpendingInsights from '../components/SpendingInsights';
 import CategoryCharts from '../components/CategoryCharts';
 import { DashboardCard } from '../components/DashboardCustomizer';
+import { DollarSign, Settings, ArrowLeftRight, Edit, Plus, X, Lightbulb, BarChart3 } from 'lucide-react';
 
 interface Props {
   dashboardCards: DashboardCard[];
@@ -28,6 +29,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
   const [swapMode, setSwapMode] = useState(false);
   const [firstSwapCard, setFirstSwapCard] = useState<DashboardCard | null>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const navigate = useNavigate();
 
   const filteredTransactions = transactions;
@@ -84,10 +86,13 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       return (
         <div 
           onClick={() => handleSlotClick(section, index)}
-          className="bg-slate-600 border-2 border-dashed border-slate-500 rounded-xl p-6 text-center cursor-pointer hover:border-indigo-500 hover:bg-slate-500 transition-all"
+          className="bg-gray-800 border-2 border-dashed border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500 hover:bg-gray-700 transition-all group"
         >
-          <div className="text-gray-400 text-2xl mb-2">+</div>
-          <p className="text-gray-400 text-sm">Add Card</p>
+          <div className="text-gray-400 group-hover:text-purple-400 transition-colors mb-3 flex justify-center">
+            <Plus className="w-8 h-8" />
+          </div>
+          <p className="text-gray-400 group-hover:text-gray-300 text-sm font-medium transition-colors">Add Widget</p>
+          <p className="text-gray-500 text-xs mt-1">Click to add a new card</p>
         </div>
       );
     }
@@ -179,24 +184,108 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-800 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-          <p className="text-gray-400">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-gray-300">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-800 p-3 sm:p-4 lg:p-8">
-      <div className="max-w-full sm:max-w-md lg:max-w-6xl mx-auto">
-        {/* Mobile Top Bar */}
-        <div className="lg:hidden">
-          <div className="flex items-center justify-between p-4">
-            <div>
-              <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">💰 Uwang</h1>
-              <p className="text-sm text-gray-300">
+    <>
+      <div className="min-h-screen bg-black flex">
+      {/* Sidebar */}
+      <div className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0">
+        <div className="flex flex-col flex-grow bg-gray-900 border-r border-gray-700">
+          {/* Logo */}
+          <div className="flex items-center px-6 py-4 border-b border-gray-700">
+            <DollarSign className="w-8 h-8 text-purple-400" />
+            <h1 className="ml-3 text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+              Uwang
+            </h1>
+          </div>
+          
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3">
+              Overview
+            </div>
+            <button
+              onClick={() => setShowSettingsModal(false)}
+              className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                !showSettingsModal ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+              }`}
+            >
+              <BarChart3 className="w-5 h-5" />
+              <span className="font-medium">Dashboard</span>
+            </button>
+            
+            {!showSettingsModal && (
+              <div className="animate-slideIn" style={{animationDelay: '0.1s'}}>
+                <button
+                  onClick={async () => {
+                    if (editMode) {
+                      await setDashboardCards([...dashboardCards]);
+                      setSwapMode(false);
+                      setFirstSwapCard(null);
+                    }
+                    setEditMode(!editMode);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 ${
+                    editMode ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  }`}
+                >
+                  <Edit className="w-4 h-4" />
+                  <span className="text-sm">{editMode ? 'Save Layout' : 'Edit Layout'}</span>
+                </button>
+              </div>
+            )}
+            
+            {editMode && !showSettingsModal && (
+              <div className="animate-slideIn" style={{animationDelay: '0.2s'}}>
+                <button
+                  onClick={() => {
+                    setSwapMode(!swapMode);
+                    setFirstSwapCard(null);
+                  }}
+                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 ${
+                    swapMode ? 'bg-green-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  }`}
+                >
+                  <ArrowLeftRight className="w-4 h-4" />
+                  <span className="text-sm">{swapMode ? 'Exit Swap' : 'Swap Cards'}</span>
+                </button>
+              </div>
+            )}
+            
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
+              Management
+            </div>
+            <button 
+              onClick={() => setShowSettingsModal(true)}
+              className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                showSettingsModal ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+              }`}
+            >
+              <Settings className="w-5 h-5" />
+              <span>Settings</span>
+            </button>
+          </nav>
+          
+          {/* Balance Summary */}
+          <div className="px-4 py-4 border-t border-gray-700">
+            <div className="bg-gray-800 rounded-lg p-4">
+              <div className="text-xs text-gray-400 mb-1">Current Balance</div>
+              <div className={`text-lg font-bold ${
+                (() => {
+                  const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+                  const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
+                  const balance = income - expense;
+                  return balance >= 0 ? 'text-green-400' : 'text-red-400';
+                })()
+              }`}>
                 {(() => {
                   const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
                   const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
@@ -204,177 +293,184 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(balance);
                 })()
                 }
-              </p>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
+      
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-64">
+        {/* Top Bar */}
+        <header className="bg-gray-900 border-b border-gray-700 px-4 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            {/* Mobile Logo */}
+            <div className="lg:hidden flex items-center">
+              <DollarSign className="w-6 h-6 text-purple-400" />
+              <h1 className="ml-2 text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                Uwang
+              </h1>
+            </div>
+            
+            {/* Desktop Title */}
+            <div className="hidden lg:block">
+              <h2 className="text-xl font-semibold text-white">Financial Dashboard</h2>
+              <p className="text-sm text-gray-400">Monitor your financial health and transactions</p>
+            </div>
+            
+            {/* Mobile Settings */}
             <button 
-              onClick={() => navigate('/settings')}
-              className="bg-slate-700 rounded-lg p-2 border border-slate-600 shadow-lg hover:bg-slate-600 transition-colors"
+              onClick={() => setShowSettingsModal(true)}
+              className="lg:hidden bg-gray-800 rounded-lg p-2 border border-gray-700 hover:bg-gray-700 transition-colors"
             >
-              <span className="text-gray-400 hover:text-white text-lg">⚙️</span>
+              <Settings className="w-5 h-5 text-gray-300" />
             </button>
           </div>
-          <div className="bg-blue-900 bg-opacity-30 border border-blue-600 rounded-lg p-2 mx-4 mb-4">
-            <p className="text-blue-300 text-xs">
-              💡 <strong>Tip:</strong> Akses dari desktop untuk fitur lengkap seperti analytics, budgeting, dan drag & drop!
-            </p>
-          </div>
-        </div>
-
-        {/* Desktop Header */}
-        <div className="hidden lg:block text-center py-4 lg:py-8 animate-fadeIn">
-          <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold bg-gradient-to-r from-indigo-400 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse">💰 Uwang</h1>
-          <p className="text-gray-400 text-xs sm:text-sm lg:text-base">Kelola Keuangan Rumah Tangga</p>
-          
-          <div className="flex justify-center items-center gap-4 mt-3">
-            <div 
-              onClick={() => navigate('/settings')}
-              className="bg-slate-700 rounded-lg p-1 border border-slate-600 shadow-lg cursor-pointer hover:bg-slate-600 transition-colors"
-            >
-              <div className="px-3 py-2 text-xs sm:text-sm text-gray-400 hover:text-white transition-colors select-none">
-                ⚙️ Settings
-              </div>
-            </div>
-            
-            <div className="flex gap-2">
-              {editMode && (
-                <div 
-                  onClick={() => {
-                    setSwapMode(!swapMode);
-                    setFirstSwapCard(null);
-                  }}
-                  className={`rounded-lg p-1 border border-slate-600 shadow-lg cursor-pointer transition-colors ${
-                    swapMode ? 'bg-green-600 hover:bg-green-700' : 'bg-slate-700 hover:bg-slate-600'
-                  }`}
-                >
-                  <div className={`px-3 py-2 text-xs sm:text-sm transition-colors select-none ${
-                    swapMode ? 'text-white' : 'text-gray-400 hover:text-white'
-                  }`}>
-                    ↔️ {swapMode ? 'Remove Mode' : 'Swap Mode'}
-                  </div>
-                </div>
-              )}
-              <div 
-                onClick={async () => {
-                  if (editMode) {
-                    await setDashboardCards([...dashboardCards]);
-                    setSwapMode(false);
-                    setFirstSwapCard(null);
-                  }
-                  setEditMode(!editMode);
-                }}
-                className={`rounded-lg p-1 border border-slate-600 shadow-lg cursor-pointer transition-colors ${
-                  editMode ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-slate-700 hover:bg-slate-600'
-                }`}
-              >
-                <div className={`px-3 py-2 text-xs sm:text-sm transition-colors select-none ${
-                  editMode ? 'text-white' : 'text-gray-400 hover:text-white'
-                }`}>
-                  ✏️ {editMode ? 'Done' : 'Edit'}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </header>
         
-        <div className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-4 lg:space-y-0">
-          <div className="lg:col-span-1 space-y-4 lg:space-y-6 animate-slideIn">
-            {sidebarSlots.map((card, index) => (
-              <div key={`sidebar-${index}`}>
-                {renderCard(card, 'sidebar', card ? card.sectionIndex || index : sidebarCards.length)}
+        {/* Dashboard Content */}
+        <main className="p-4 lg:p-8">
+          {showSettingsModal ? (
+            <div className="max-w-2xl mx-auto animate-fadeIn">
+              <div className="mb-6 animate-slideIn">
+                <h2 className="text-2xl font-bold text-white">Settings</h2>
+                <p className="text-gray-400">Manage your application settings</p>
               </div>
-            ))}
-          </div>
-          <div className="lg:col-span-3 space-y-4 lg:space-y-6 animate-slideIn" style={{animationDelay: '0.1s'}}>
-            {/* Mobile: Only TransactionList */}
-            <div className="lg:hidden space-y-4">
-              <TransactionList 
-                transactions={filteredTransactions} 
-                onEditTransaction={editTransaction}
-                onDeleteTransaction={deleteTransaction}
-                isInSidebar={false}
-              />
-            </div>
-            
-            {/* Large devices: All cards */}
-            <div className="hidden lg:block space-y-6">
-              {mainSlots.map((card, index) => (
-                <div key={`main-${index}`}>
-                  {renderCard(card, 'main', card ? card.sectionIndex || index : mainCards.length)}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        
-        {/* Mobile Floating Add Button */}
-        <div className="lg:hidden fixed bottom-6 right-6 z-50">
-          <button
-            onClick={() => setShowTransactionModal(true)}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-colors"
-          >
-            <span className="text-2xl">+</span>
-          </button>
-        </div>
-        
-        {/* Mobile Transaction Form Modal */}
-        {showTransactionModal && (
-          <div 
-            className="lg:hidden fixed inset-0 flex items-end justify-center z-50"
-            style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(10px)' }}
-            onClick={() => setShowTransactionModal(false)}
-          >
-            <div 
-              className="bg-slate-700 rounded-t-xl w-full max-h-[80vh] overflow-y-auto border border-slate-500 shadow-2xl animate-scaleIn"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="p-4 border-b border-slate-600 flex justify-between items-center">
-                <h3 className="text-lg font-semibold text-white">Tambah Transaksi</h3>
+              
+              <div className="bg-gray-900 rounded-xl p-6 border border-gray-700 animate-scaleIn" style={{animationDelay: '0.1s'}}>
+                <h3 className="text-xl font-semibold text-white mb-4">Data Management</h3>
+                <p className="text-gray-400 mb-4">
+                  Reset all your transaction data. This action cannot be undone.
+                </p>
                 <button
-                  onClick={() => setShowTransactionModal(false)}
-                  className="text-gray-400 hover:text-white text-xl"
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    navigate('/settings');
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                 >
-                  ×
+                  Reset Data
                 </button>
               </div>
-              <div className="p-4">
-                <TransactionForm 
-                  onAddTransaction={(transaction) => {
-                    addTransaction(transaction);
-                    setShowTransactionModal(false);
-                  }} 
-                />
+            </div>
+          ) : (
+            <div className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-6 lg:space-y-0 animate-fadeIn">
+              {/* Sidebar Cards */}
+              <div className="lg:col-span-1 space-y-6">
+                {sidebarSlots.map((card, index) => (
+                  <div key={`sidebar-${index}`}>
+                    {renderCard(card, 'sidebar', card ? card.sectionIndex || index : sidebarCards.length)}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Main Cards */}
+              <div className="lg:col-span-3 space-y-6">
+                {/* Mobile: Only TransactionList */}
+                <div className="lg:hidden">
+                  <TransactionList 
+                    transactions={filteredTransactions} 
+                    onEditTransaction={editTransaction}
+                    onDeleteTransaction={deleteTransaction}
+                    isInSidebar={false}
+                  />
+                </div>
+                
+                {/* Desktop: All cards */}
+                <div className="hidden lg:block space-y-6">
+                  {mainSlots.map((card, index) => (
+                    <div key={`main-${index}`}>
+                      {renderCard(card, 'main', card ? card.sectionIndex || index : mainCards.length)}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
+          )}
+        </main>
+      </div>
+      
+      {/* Mobile Floating Add Button */}
+      <div className="lg:hidden fixed bottom-6 right-6 z-50">
+        <button
+          onClick={() => setShowTransactionModal(true)}
+          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-2xl transition-all transform hover:scale-105 border-4 border-black"
+        >
+          <Plus className="w-7 h-7" />
+        </button>
+      </div>
+        
+      {/* Mobile Transaction Form Modal */}
+      {showTransactionModal && (
+        <div 
+          className="lg:hidden fixed inset-0 flex items-end justify-center z-50"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(10px)' }}
+          onClick={() => setShowTransactionModal(false)}
+        >
+          <div 
+            className="bg-gray-900 rounded-t-2xl w-full max-h-[85vh] overflow-y-auto border-t border-gray-700 shadow-2xl animate-scaleIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Add Transaction</h3>
+                <p className="text-sm text-gray-400">Record your income or expense</p>
+              </div>
+              <button
+                onClick={() => setShowTransactionModal(false)}
+                className="text-gray-400 hover:text-white bg-gray-800 rounded-full p-2 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6">
+              <TransactionForm 
+                onAddTransaction={(transaction) => {
+                  addTransaction(transaction);
+                  setShowTransactionModal(false);
+                }} 
+              />
+            </div>
           </div>
-        )}
+        </div>
+      )}
         
         {/* Card Selection Modal */}
         {showCardModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(10px)' }}>
-            <div className="bg-slate-700 rounded-xl p-6 max-w-md w-full border border-slate-600">
-              <h3 className="text-lg font-semibold text-white mb-4">Select Card</h3>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {dashboardCards.filter(card => !card.enabled || card.section === undefined).map((card) => (
-                  <button
-                    key={card.id}
-                    onClick={() => handleCardSelect(card.id)}
-                    className="w-full flex items-center gap-3 p-3 bg-slate-600 rounded-lg hover:bg-slate-500 transition-colors text-left"
-                  >
-                    <span className="text-lg">{card.icon}</span>
-                    <span className="text-gray-100">{card.name}</span>
-                  </button>
-                ))}
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(10px)' }}>
+            <div className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-lg w-full">
+              <div className="px-6 py-4 border-b border-gray-700">
+                <h3 className="text-lg font-semibold text-white">Add Widget</h3>
+                <p className="text-sm text-gray-400 mt-1">Choose a widget to add to your dashboard</p>
               </div>
-              <button
-                onClick={() => setShowCardModal(false)}
-                className="mt-4 w-full px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-500 transition-colors"
-              >
-                Cancel
-              </button>
+              
+              <div className="p-6">
+                <div className="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto">
+                  {dashboardCards.filter(card => !card.enabled || card.section === undefined).map((card) => (
+                    <button
+                      key={card.id}
+                      onClick={() => handleCardSelect(card.id)}
+                      className="flex flex-col items-center gap-3 p-4 bg-gray-800 rounded-lg hover:bg-gray-700 hover:border-purple-500 border border-gray-600 transition-all text-center group"
+                    >
+                      <span className="text-2xl group-hover:scale-110 transition-transform">{card.icon}</span>
+                      <span className="text-gray-100 text-sm font-medium">{card.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="px-6 py-4 border-t border-gray-700">
+                <button
+                  onClick={() => setShowCardModal(false)}
+                  className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }

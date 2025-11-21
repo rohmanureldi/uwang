@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
+import { DollarSign } from 'lucide-react';
 import CategoryModal from './CategoryModal';
 
 interface Props {
@@ -102,27 +103,29 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
 
   if (transactions.length === 0) {
     return (
-      <div className="bg-slate-700 rounded-xl p-6 sm:p-8 shadow-lg border border-slate-600 text-center">
-        <div className="text-gray-400 text-4xl sm:text-5xl mb-2">💰</div>
-        <p className="text-gray-400 text-sm sm:text-base">Belum ada transaksi</p>
+      <div className="bg-gray-900 rounded-xl p-6 sm:p-8 shadow-lg border border-gray-700 text-center">
+        <div className="text-gray-300 text-4xl sm:text-5xl mb-2 flex justify-center">
+          <DollarSign className="w-12 h-12" />
+        </div>
+        <p className="text-gray-300 text-sm sm:text-base">Belum ada transaksi</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600">
+    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold text-gray-100 text-lg">Riwayat Transaksi</h3>
         
         {/* View Mode Toggle - Hidden in sidebar */}
         {!isInSidebar && (
-          <div className="bg-slate-600 rounded-lg p-1 border border-slate-500">
+          <div className="bg-gray-800 rounded-lg p-1 border border-gray-600">
             <button
               onClick={() => setViewMode('list')}
               className={`px-3 py-1 rounded text-xs transition-all ${
                 viewMode === 'list' 
-                  ? 'bg-indigo-600 text-white shadow-sm' 
-                  : 'text-gray-400 hover:text-white hover:bg-slate-500'
+                  ? 'bg-purple-600 text-white shadow-sm' 
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
               }`}
             >
               📋 List
@@ -131,8 +134,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
               onClick={() => setViewMode('table')}
               className={`px-3 py-1 rounded text-xs transition-all ${
                 viewMode === 'table' 
-                  ? 'bg-indigo-600 text-white shadow-sm' 
-                  : 'text-gray-400 hover:text-white hover:bg-slate-500'
+                  ? 'bg-purple-600 text-white shadow-sm' 
+                  : 'text-gray-300 hover:text-white hover:bg-gray-700'
               }`}
             >
               📊 Table
@@ -143,12 +146,12 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       
       <div className={`flex justify-between items-center gap-2 mb-4 ${isInSidebar ? 'text-xs' : 'text-sm'}`}>
         <div className="flex items-center gap-2">
-          <span className="text-gray-400">Filter:</span>
+          <span className="text-gray-300">Filter:</span>
           <div className="relative">
             <select
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
-              className={`border border-slate-600 bg-slate-700 text-gray-100 rounded appearance-none ${
+              className={`border border-gray-600 bg-gray-800 text-gray-100 rounded appearance-none ${
                 isInSidebar ? 'pl-2 pr-6 py-1 text-xs' : 'pl-3 pr-8 py-2'
               }`}
             >
@@ -158,17 +161,17 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
               ))}
             </select>
             <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-              <svg className={`text-gray-400 ${isInSidebar ? 'w-2 h-2' : 'w-3 h-3'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`text-gray-300 ${isInSidebar ? 'w-2 h-2' : 'w-3 h-3'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {!isInSidebar && <span className="text-gray-400">Urut:</span>}
+          {!isInSidebar && <span className="text-gray-300">Urut:</span>}
           <button
             onClick={() => setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc')}
-            className={`border border-slate-600 bg-slate-700 text-gray-100 rounded hover:bg-slate-600 transition-colors flex items-center gap-1 ${
+            className={`border border-gray-600 bg-gray-800 text-gray-100 rounded hover:bg-gray-700 transition-colors flex items-center gap-1 ${
               isInSidebar ? 'px-2 py-1 text-xs' : 'px-3 py-2'
             }`}
           >
@@ -282,7 +285,10 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                       isInSidebar ? 'text-xs' : 'text-xs sm:text-sm'
                     }`}>
                       <span className="flex items-center gap-1">
-                        <span>{getCategoryIcon(transaction.category)}</span>
+                        {(() => {
+                          const IconComponent = getCategoryIcon(transaction.category);
+                          return <IconComponent className="w-3 h-3 text-purple-400" />;
+                        })()}
                         <span className={isInSidebar ? 'truncate max-w-16' : ''}>{transaction.category}</span>
                       </span>
                       {transaction.time && !isInSidebar && <span>• {transaction.time}</span>}
@@ -433,7 +439,10 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                         {transaction.description || (transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran')}
                       </div>
                       <div className="flex items-center gap-1 text-gray-300">
-                        <span>{getCategoryIcon(transaction.category)}</span>
+                        {(() => {
+                          const IconComponent = getCategoryIcon(transaction.category);
+                          return <IconComponent className="w-4 h-4 text-purple-400" />;
+                        })()}
                         <span className="truncate">{transaction.category}</span>
                       </div>
                       <div className={`text-right font-semibold ${

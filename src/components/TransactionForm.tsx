@@ -79,7 +79,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
   };
 
   return (
-    <div className="bg-slate-700 rounded-xl p-3 sm:p-4 lg:p-6 shadow-lg border border-slate-600 transition-all animate-scaleIn">
+    <div className="bg-gray-900 rounded-xl p-3 sm:p-4 lg:p-6 shadow-lg border border-gray-700 transition-all animate-scaleIn">
       <h3 className="font-semibold text-gray-100 mb-3 sm:mb-4 text-base sm:text-lg">Tambah Transaksi</h3>
       
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
@@ -119,7 +119,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
               placeholder="Jumlah"
               value={amount}
               onChange={handleAmountChange}
-              className="px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm placeholder-gray-400 w-full touch-manipulation"
+              className="px-3 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm placeholder-gray-400 w-full touch-manipulation"
             />
             {amountError && (
               <div className="mt-1 text-red-400 text-sm animate-fadeIn">
@@ -131,7 +131,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
             <button
               type="button"
               onClick={() => setShowCategoryModal(true)}
-              className="px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg text-left text-sm hover:bg-slate-500 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none w-full touch-manipulation"
+              className="px-3 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg text-left text-sm hover:bg-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none w-full touch-manipulation"
             >
               {category || 'Pilih Kategori'}
             </button>
@@ -148,7 +148,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
           placeholder="Deskripsi"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm placeholder-gray-400 touch-manipulation"
+          className="w-full px-3 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm placeholder-gray-400 touch-manipulation"
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -156,7 +156,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm cursor-pointer w-full touch-manipulation"
+            className="px-3 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm cursor-pointer w-full touch-manipulation"
             style={{ colorScheme: 'dark' }}
             required
           />
@@ -164,7 +164,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
             type="time"
             value={time}
             onChange={(e) => setTime(e.target.value)}
-            className="px-3 py-3 border border-slate-500 bg-slate-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm cursor-pointer w-full touch-manipulation"
+            className="px-3 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm cursor-pointer w-full touch-manipulation"
             style={{ colorScheme: 'dark' }}
             required
           />
@@ -173,7 +173,7 @@ export default function TransactionForm({ onAddTransaction }: Props) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed transition-all text-sm touch-manipulation min-h-[44px]"
+          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 rounded-lg font-medium hover:from-purple-700 hover:to-pink-700 disabled:from-purple-400 disabled:to-pink-400 disabled:cursor-not-allowed transition-all text-sm touch-manipulation min-h-[44px]"
         >
           {isSubmitting ? 'Menambah...' : 'Tambah'}
         </button>

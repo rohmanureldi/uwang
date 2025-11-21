@@ -1,6 +1,7 @@
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
+import { Search } from 'lucide-react';
 
 interface Props {
   transactions: Transaction[];
@@ -58,17 +59,19 @@ export default function SpendingInsights({ transactions }: Props) {
   }
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
-      <h3 className="font-semibold text-gray-100 mb-4 text-lg">🔍 Insight Pengeluaran</h3>
+    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn">
+      <h3 className="font-semibold text-gray-100 mb-4 text-lg flex items-center gap-2">
+        <Search className="w-5 h-5 text-purple-400" /> Insight Pengeluaran
+      </h3>
       
-      <div className="mb-4 p-3 bg-slate-600 rounded-lg">
+      <div className="mb-4 p-3 bg-gray-800 rounded-lg">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-gray-400 text-sm">Perubahan Total</span>
+          <span className="text-gray-300 text-sm">Perubahan Total</span>
           <span className={`text-sm font-semibold ${spendingChange > 0 ? 'text-red-400' : 'text-green-400'}`}>
             {spendingChange > 0 ? '+' : ''}{spendingChange.toFixed(1)}%
           </span>
         </div>
-        <div className="text-xs text-gray-500">
+        <div className="text-xs text-gray-400">
           {formatIDR(lastMonthTotal)} → {formatIDR(currentTotal)}
         </div>
       </div>
@@ -78,8 +81,11 @@ export default function SpendingInsights({ transactions }: Props) {
         {categoryChanges.slice(0, 3).map(({ category, change }) => (
           <div key={category} className="flex justify-between items-center text-sm">
             <div className="flex items-center gap-2">
-              <span>{getCategoryIcon(category)}</span>
-              <span className="text-gray-400">{category}</span>
+              {(() => {
+                const IconComponent = getCategoryIcon(category);
+                return <IconComponent className="w-4 h-4 text-purple-400" />;
+              })()}
+              <span className="text-gray-300">{category}</span>
             </div>
             <span className={`font-semibold ${change > 0 ? 'text-red-400' : 'text-green-400'}`}>
               {change > 0 ? '+' : ''}{change.toFixed(0)}%
@@ -89,9 +95,9 @@ export default function SpendingInsights({ transactions }: Props) {
       </div>
 
       <div className="space-y-2">
-        <p className="text-xs text-gray-400 font-semibold">Insight:</p>
+        <p className="text-xs text-gray-300 font-semibold">Insight:</p>
         {insights.map((insight, index) => (
-          <p key={index} className="text-xs text-gray-300 bg-slate-600 p-2 rounded">
+          <p key={index} className="text-xs text-gray-300 bg-gray-800 p-2 rounded">
             {insight}
           </p>
         ))}

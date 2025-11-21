@@ -1,5 +1,6 @@
 import { Transaction, Budget } from '../types';
 import { formatIDR } from '../utils/currency';
+import { BarChart3, TrendingDown, Trophy, FileText, AlertTriangle } from 'lucide-react';
 
 interface Props {
   transactions: Transaction[];
@@ -48,35 +49,37 @@ export default function QuickStats({ transactions }: Props) {
     {
       label: 'Rata-rata Harian',
       value: formatIDR(avgDailySpending),
-      icon: '📊'
+      icon: BarChart3
     },
     {
       label: 'Pengeluaran Terbesar',
       value: biggestExpense.amount > 0 ? formatIDR(biggestExpense.amount) : '-',
       subtitle: biggestExpense.description,
-      icon: '💸'
+      icon: TrendingDown
     },
     {
       label: 'Kategori Pengeluaran',
       value: topCategory[1] > 0 ? formatIDR(topCategory[1]) : '-',
       subtitle: topCategory[0],
-      icon: '🏆'
+      icon: Trophy
     },
     {
       label: 'Total Transaksi',
       value: transactions.length.toString(),
       subtitle: `${income.length} masuk, ${expenses.length} keluar`,
-      icon: '📝'
+      icon: FileText
     }
   ];
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
+    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn">
       <h3 className="font-semibold text-gray-100 mb-4 text-lg">Statistik Cepat</h3>
       
       {budgetAlerts.length > 0 && (
         <div className="mb-4 p-3 bg-orange-900 bg-opacity-30 border border-orange-600 rounded-lg">
-          <p className="text-orange-400 text-sm font-semibold mb-1">⚠️ Peringatan Budget</p>
+          <p className="text-orange-400 text-sm font-semibold mb-1 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" /> Peringatan Budget
+          </p>
           {budgetAlerts.map(budget => {
             const spent = categorySpending[budget.category] || 0;
             const percentage = (spent / budget.limit) * 100;
@@ -92,12 +95,12 @@ export default function QuickStats({ transactions }: Props) {
         {stats.map((stat, index) => (
           <div 
             key={index} 
-            className="p-3 bg-gradient-to-br from-slate-600 to-slate-700 rounded-lg border border-slate-500 hover:scale-105 transition-all duration-300 animate-fadeIn"
+            className="p-3 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-600 hover:scale-105 transition-all duration-300 animate-fadeIn"
             style={{animationDelay: `${index * 0.1}s`}}
           >
             <div className="flex items-start gap-2 mb-2">
-              <span className="text-lg flex-shrink-0">{stat.icon}</span>
-              <p className="text-gray-400 font-medium leading-tight" style={{
+              <stat.icon className="w-5 h-5 text-purple-400 flex-shrink-0" />
+              <p className="text-gray-300 font-medium leading-tight" style={{
                 fontSize: stat.label.length > 15 ? '10px' : stat.label.length > 10 ? '11px' : '12px',
                 lineHeight: '1.2',
                 display: '-webkit-box',
@@ -108,7 +111,7 @@ export default function QuickStats({ transactions }: Props) {
             </div>
             <p className="font-semibold text-gray-100 text-sm mb-1">{stat.value}</p>
             {stat.subtitle && (
-              <p className="text-xs text-gray-500 truncate" title={stat.subtitle}>
+              <p className="text-xs text-gray-400 truncate" title={stat.subtitle}>
                 {stat.subtitle}
               </p>
             )}

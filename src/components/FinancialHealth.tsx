@@ -1,4 +1,5 @@
 import { Transaction } from '../types';
+import { Heart, BarChart3 } from 'lucide-react';
 
 interface Props {
   transactions: Transaction[];
@@ -14,11 +15,15 @@ export default function FinancialHealth({ transactions }: Props) {
   // If no transactions, return early with no data state
   if (monthlyTransactions.length === 0) {
     return (
-      <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
-        <h3 className="font-semibold text-gray-100 mb-4 text-lg">🏥 Kesehatan Finansial</h3>
+      <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn">
+        <h3 className="font-semibold text-gray-100 mb-4 text-lg flex items-center gap-2">
+          <Heart className="w-5 h-5 text-purple-400" /> Kesehatan Finansial
+        </h3>
         <div className="text-center py-8">
-          <div className="text-gray-400 text-4xl mb-2">📊</div>
-          <p className="text-gray-400 text-sm">Tambahkan transaksi untuk melihat kesehatan finansial</p>
+          <div className="text-gray-300 text-4xl mb-2 flex justify-center">
+            <BarChart3 className="w-12 h-12" />
+          </div>
+          <p className="text-gray-300 text-sm">Tambahkan transaksi untuk melihat kesehatan finansial</p>
         </div>
       </div>
     );
@@ -84,8 +89,10 @@ export default function FinancialHealth({ transactions }: Props) {
   }
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
-      <h3 className="font-semibold text-gray-100 mb-4 text-lg">🏥 Kesehatan Finansial</h3>
+    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn">
+      <h3 className="font-semibold text-gray-100 mb-4 text-lg flex items-center gap-2">
+        <Heart className="w-5 h-5 text-purple-400" /> Kesehatan Finansial
+      </h3>
       
       <div className="text-center mb-4">
         <div className={`text-4xl font-bold ${getScoreColor(healthScore)} mb-2`}>
@@ -98,12 +105,12 @@ export default function FinancialHealth({ transactions }: Props) {
 
       <div className="space-y-3 mb-4">
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Tingkat Tabungan</span>
+          <span className="text-gray-300">Tingkat Tabungan</span>
           <span className={savingsRate >= 10 ? 'text-green-400' : 'text-red-400'}>
             {savingsRate.toFixed(1)}%
           </span>
         </div>
-        <div className="w-full bg-slate-600 rounded-full h-2">
+        <div className="w-full bg-gray-700 rounded-full h-2">
           <div 
             className={`h-2 rounded-full transition-all duration-500 ${
               savingsRate >= 10 ? 'bg-green-500' : 'bg-red-500'
@@ -113,12 +120,12 @@ export default function FinancialHealth({ transactions }: Props) {
         </div>
         
         <div className="flex justify-between text-sm">
-          <span className="text-gray-400">Rasio Pengeluaran</span>
+          <span className="text-gray-300">Rasio Pengeluaran</span>
           <span className={expenseRatio <= 70 ? 'text-green-400' : 'text-red-400'}>
             {expenseRatio.toFixed(1)}%
           </span>
         </div>
-        <div className="w-full bg-slate-600 rounded-full h-2">
+        <div className="w-full bg-gray-700 rounded-full h-2">
           <div 
             className={`h-2 rounded-full transition-all duration-500 ${
               expenseRatio <= 70 ? 'bg-green-500' : 'bg-red-500'
@@ -130,9 +137,9 @@ export default function FinancialHealth({ transactions }: Props) {
 
       {insights.length > 0 && (
         <div className="space-y-2">
-          <p className="text-xs text-gray-400 font-semibold">Saran:</p>
+          <p className="text-xs text-gray-300 font-semibold">Saran:</p>
           {insights.map((insight, index) => (
-            <p key={index} className="text-xs text-gray-300 bg-slate-600 p-2 rounded">
+            <p key={index} className="text-xs text-gray-300 bg-gray-800 p-2 rounded">
               {insight}
             </p>
           ))}

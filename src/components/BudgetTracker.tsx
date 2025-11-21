@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Transaction, Budget } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
+import { DollarSign, Plus, X } from 'lucide-react';
 import { getCategories } from '../utils/categories';
 import { useCustomCategories } from '../hooks/useCustomCategories';
 
@@ -56,23 +57,29 @@ export default function BudgetTracker({ transactions }: Props) {
   const expenseCategories = getCategories('expense', customCategories);
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
+    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="font-semibold text-gray-100 text-lg">💰 Budget Bulanan</h3>
+        <h3 className="font-semibold text-gray-100 text-lg flex items-center gap-2">
+          <DollarSign className="w-5 h-5 text-purple-400" /> Budget Bulanan
+        </h3>
         <button
           onClick={() => setShowAddBudget(!showAddBudget)}
-          className="text-indigo-400 hover:text-indigo-300 text-sm"
+          className="text-purple-400 hover:text-purple-300 text-sm flex items-center gap-1"
         >
-          {showAddBudget ? 'Batal' : '+ Tambah'}
+          {showAddBudget ? (
+            <><X className="w-4 h-4" /> Batal</>
+          ) : (
+            <><Plus className="w-4 h-4" /> Tambah</>
+          )}
         </button>
       </div>
 
       {showAddBudget && (
-        <div className="mb-4 p-3 bg-slate-600 rounded-lg space-y-3">
+        <div className="mb-4 p-3 bg-gray-800 rounded-lg space-y-3">
           <select
             value={newBudget.category}
             onChange={(e) => setNewBudget({...newBudget, category: e.target.value})}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-gray-100 text-sm"
+            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded text-gray-100 text-sm"
           >
             <option value="">Pilih Kategori</option>
             {expenseCategories.map(cat => (
@@ -84,11 +91,11 @@ export default function BudgetTracker({ transactions }: Props) {
             placeholder="Batas Budget"
             value={newBudget.limit}
             onChange={(e) => setNewBudget({...newBudget, limit: formatNumber(e.target.value)})}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-500 rounded text-gray-100 text-sm"
+            className="w-full px-3 py-2 bg-gray-900 border border-gray-600 rounded text-gray-100 text-sm"
           />
           <button
             onClick={addBudget}
-            className="w-full bg-indigo-600 text-white py-2 rounded text-sm hover:bg-indigo-700"
+            className="w-full bg-purple-600 text-white py-2 rounded text-sm hover:bg-purple-700"
           >
             Simpan Budget
           </button>
@@ -97,7 +104,7 @@ export default function BudgetTracker({ transactions }: Props) {
 
       <div className="space-y-3">
         {currentBudgets.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-4">Belum ada budget untuk bulan ini</p>
+          <p className="text-gray-300 text-sm text-center py-4">Belum ada budget untuk bulan ini</p>
         ) : (
           currentBudgets.map((budget) => {
             const spent = categorySpending[budget.category] || 0;
@@ -108,7 +115,10 @@ export default function BudgetTracker({ transactions }: Props) {
               <div key={budget.category} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
-                    <span>{getCategoryIcon(budget.category)}</span>
+                    {(() => {
+                      const IconComponent = getCategoryIcon(budget.category);
+                      return <IconComponent className="w-4 h-4 text-purple-400" />;
+                    })()}
                     <span className="text-gray-100 text-sm">{budget.category}</span>
                   </div>
                   <div className="text-right">
@@ -120,7 +130,7 @@ export default function BudgetTracker({ transactions }: Props) {
                     </div>
                   </div>
                 </div>
-                <div className="w-full bg-slate-600 rounded-full h-2">
+                <div className="w-full bg-gray-700 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full transition-all duration-500 ${
                       isOverBudget 

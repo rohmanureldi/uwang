@@ -2,6 +2,7 @@ import { Doughnut } from 'react-chartjs-2';
 import { useMemo } from 'react';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
+import { PieChart, TrendingUp, DollarSign, TrendingDown } from 'lucide-react';
 
 interface Props {
   transactions: Transaction[];
@@ -127,19 +128,25 @@ export default function CategoryCharts({ transactions }: Props) {
 
   if (Object.keys(incomeByCategory).length === 0 && Object.keys(expenseByCategory).length === 0) {
     return (
-      <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
-        <h3 className="font-semibold text-gray-100 mb-4 text-lg">📊 Grafik Kategori</h3>
+      <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn">
+        <h3 className="font-semibold text-gray-100 mb-4 text-lg flex items-center gap-2">
+          <PieChart className="w-5 h-5 text-purple-400" /> Grafik Kategori
+        </h3>
         <div className="text-center py-8">
-          <div className="text-gray-400 text-4xl mb-2">📈</div>
-          <p className="text-gray-400 text-sm">Belum ada data untuk grafik kategori</p>
+          <div className="text-gray-300 text-4xl mb-2 flex justify-center">
+            <TrendingUp className="w-12 h-12" />
+          </div>
+          <p className="text-gray-300 text-sm">Belum ada data untuk grafik kategori</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-slate-700 rounded-xl p-4 sm:p-6 shadow-lg border border-slate-600 animate-scaleIn">
-      <h3 className="font-semibold text-gray-100 mb-4 text-lg">📊 Grafik Kategori</h3>
+    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn">
+      <h3 className="font-semibold text-gray-100 mb-4 text-lg flex items-center gap-2">
+        <PieChart className="w-5 h-5 text-purple-400" /> Grafik Kategori
+      </h3>
       
       <div className={`grid gap-6 ${
         Object.keys(incomeByCategory).length > 0 && Object.keys(expenseByCategory).length > 0 
@@ -148,7 +155,9 @@ export default function CategoryCharts({ transactions }: Props) {
       }`}>
         {Object.keys(incomeByCategory).length > 0 && (
           <div key="income-chart">
-            <h4 className="text-green-400 font-medium mb-3 text-center">💰 Pemasukan</h4>
+            <h4 className="text-green-400 font-medium mb-3 text-center flex items-center justify-center gap-2">
+              <DollarSign className="w-4 h-4" /> Pemasukan
+            </h4>
             <div className="h-48">
               <Doughnut 
                 key={`income-${Object.keys(incomeByCategory).join('-')}`}
@@ -161,7 +170,9 @@ export default function CategoryCharts({ transactions }: Props) {
         
         {Object.keys(expenseByCategory).length > 0 && (
           <div key="expense-chart">
-            <h4 className="text-red-400 font-medium mb-3 text-center">💸 Pengeluaran</h4>
+            <h4 className="text-red-400 font-medium mb-3 text-center flex items-center justify-center gap-2">
+              <TrendingDown className="w-4 h-4" /> Pengeluaran
+            </h4>
             <div className="h-48">
               <Doughnut 
                 key={`expense-${Object.keys(expenseByCategory).join('-')}`}
