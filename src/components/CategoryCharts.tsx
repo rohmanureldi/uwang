@@ -107,8 +107,9 @@ export default function CategoryCharts({ transactions }: Props) {
         borderColor: '#475569',
         borderWidth: 1,
         cornerRadius: 8,
+        displayColors: false,
         callbacks: {
-          label: (context: any) => `${context.label}: ${formatIDR(context.raw)}`,
+          label: (context: any) => formatIDR(context.raw),
         },
       },
       datalabels: {
@@ -143,12 +144,12 @@ export default function CategoryCharts({ transactions }: Props) {
   }
 
   return (
-    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn">
+    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn overflow-visible">
       <h3 className="font-semibold text-gray-100 mb-4 text-lg flex items-center gap-2">
         <PieChart className="w-5 h-5 text-purple-400" /> Grafik Kategori
       </h3>
       
-      <div className={`grid gap-6 ${
+      <div className={`grid gap-6 overflow-visible ${
         Object.keys(incomeByCategory).length > 0 && Object.keys(expenseByCategory).length > 0 
           ? 'grid-cols-1 lg:grid-cols-2' 
           : 'grid-cols-1 place-items-center'
@@ -158,7 +159,7 @@ export default function CategoryCharts({ transactions }: Props) {
             <h4 className="text-green-400 font-medium mb-3 text-center flex items-center justify-center gap-2">
               <DollarSign className="w-4 h-4" /> Pemasukan
             </h4>
-            <div className="h-48">
+            <div className="h-48 relative">
               <Doughnut 
                 key={`income-${Object.keys(incomeByCategory).join('-')}`}
                 data={createChartData(incomeByCategory, incomeColors)} 
@@ -173,7 +174,7 @@ export default function CategoryCharts({ transactions }: Props) {
             <h4 className="text-red-400 font-medium mb-3 text-center flex items-center justify-center gap-2">
               <TrendingDown className="w-4 h-4" /> Pengeluaran
             </h4>
-            <div className="h-48">
+            <div className="h-48 relative">
               <Doughnut 
                 key={`expense-${Object.keys(expenseByCategory).join('-')}`}
                 data={createChartData(expenseByCategory, expenseColors)} 

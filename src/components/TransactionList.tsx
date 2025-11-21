@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
-import { DollarSign } from 'lucide-react';
+import { DollarSign, List, Table, Edit, Trash2 } from 'lucide-react';
 import CategoryModal from './CategoryModal';
 
 interface Props {
@@ -119,26 +119,26 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
         
         {/* View Mode Toggle - Hidden in sidebar */}
         {!isInSidebar && (
-          <div className="bg-gray-800 rounded-lg p-1 border border-gray-600">
+          <div className="bg-gray-800 rounded-lg p-1 border border-gray-600 flex">
             <button
               onClick={() => setViewMode('list')}
-              className={`px-3 py-1 rounded text-xs transition-all ${
+              className={`px-3 py-1 rounded text-xs transition-all flex items-center gap-1 ${
                 viewMode === 'list' 
                   ? 'bg-purple-600 text-white shadow-sm' 
                   : 'text-gray-300 hover:text-white hover:bg-gray-700'
               }`}
             >
-              📋 List
+              <List className="w-3 h-3" /> List
             </button>
             <button
               onClick={() => setViewMode('table')}
-              className={`px-3 py-1 rounded text-xs transition-all ${
+              className={`px-3 py-1 rounded text-xs transition-all flex items-center gap-1 ${
                 viewMode === 'table' 
                   ? 'bg-purple-600 text-white shadow-sm' 
                   : 'text-gray-300 hover:text-white hover:bg-gray-700'
               }`}
             >
-              📊 Table
+              <Table className="w-3 h-3" /> Table
             </button>
           </div>
         )}
@@ -303,21 +303,21 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                     <div className="flex gap-1">
                       <button
                         onClick={() => startEdit(transaction)}
-                        className={`text-primary-400 hover:bg-slate-600 rounded ${
+                        className={`text-purple-400 hover:bg-gray-800 rounded ${
                           isInSidebar ? 'p-0.5 text-xs' : 'p-1'
                         }`}
                         title="Edit"
                       >
-                        ✏️
+                        <Edit className="w-3 h-3" />
                       </button>
                       <button
                         onClick={() => setDeleteConfirmId(transaction.id)}
-                        className={`text-red-400 hover:bg-slate-600 rounded ${
+                        className={`text-red-400 hover:bg-gray-800 rounded ${
                           isInSidebar ? 'p-0.5 text-xs' : 'p-1'
                         }`}
                         title="Delete"
                       >
-                        🗑️
+                        <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
@@ -343,7 +343,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
             </div>
             <div className="bg-slate-700 rounded-b-lg">
               {filteredAndSortedTransactions.map((transaction, index) => (
-                <div key={transaction.id} className={`grid grid-cols-5 gap-4 px-4 py-3 text-sm border-b border-slate-600 last:border-b-0 hover:bg-slate-600 transition-colors animate-fadeIn ${
+                <div key={transaction.id} className={`grid grid-cols-5 gap-4 px-4 py-3 text-sm border-b border-slate-600 last:border-b-0 hover:bg-slate-600 transition-colors animate-fadeIn items-center ${
                   editingId === transaction.id ? 'bg-slate-600' : ''
                 }`} style={{animationDelay: `${index * 0.05}s`}}>
                   {editingId === transaction.id ? (
@@ -453,17 +453,17 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                       <div className="flex justify-center gap-1">
                         <button
                           onClick={() => startEdit(transaction)}
-                          className="p-1 text-indigo-400 hover:bg-slate-600 rounded"
+                          className="p-1 text-purple-400 hover:bg-gray-800 rounded"
                           title="Edit"
                         >
-                          ✏️
+                          <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(transaction.id)}
-                          className="p-1 text-red-400 hover:bg-slate-600 rounded"
+                          className="p-1 text-red-400 hover:bg-gray-800 rounded"
                           title="Delete"
                         >
-                          🗑️
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </>

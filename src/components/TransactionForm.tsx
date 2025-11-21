@@ -83,33 +83,35 @@ export default function TransactionForm({ onAddTransaction }: Props) {
       <h3 className="font-semibold text-gray-100 mb-3 sm:mb-4 text-base sm:text-lg">Tambah Transaksi</h3>
       
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-        <div className="flex gap-4 sm:gap-6">
-          <label className="flex items-center gap-2 cursor-pointer py-2">
-            <input
-              type="radio"
-              value="income"
-              checked={type === 'income'}
-              onChange={(e) => {
-                setType(e.target.value as 'income');
-                setCategory('');
-              }}
-              className="text-green-600 w-4 h-4"
-            />
-            <span className="text-sm text-green-400">Pemasukan</span>
-          </label>
-          <label className="flex items-center gap-2 cursor-pointer py-2">
-            <input
-              type="radio"
-              value="expense"
-              checked={type === 'expense'}
-              onChange={(e) => {
-                setType(e.target.value as 'expense');
-                setCategory('');
-              }}
-              className="text-red-400 w-4 h-4"
-            />
-            <span className="text-sm text-red-400">Pengeluaran</span>
-          </label>
+        <div className="bg-gray-800 rounded-lg p-1 flex">
+          <button
+            type="button"
+            onClick={() => {
+              setType('income');
+              setCategory('');
+            }}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              type === 'income'
+                ? 'bg-green-600 text-white shadow-sm'
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            Pemasukan
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setType('expense');
+              setCategory('');
+            }}
+            className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              type === 'expense'
+                ? 'bg-red-600 text-white shadow-sm'
+                : 'text-gray-300 hover:text-white hover:bg-gray-700'
+            }`}
+          >
+            Pengeluaran
+          </button>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

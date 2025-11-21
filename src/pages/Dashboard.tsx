@@ -14,6 +14,7 @@ import SpendingInsights from '../components/SpendingInsights';
 import CategoryCharts from '../components/CategoryCharts';
 import { DashboardCard } from '../components/DashboardCustomizer';
 import { DollarSign, Settings, ArrowLeftRight, Edit, Plus, X, Lightbulb, BarChart3 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
   dashboardCards: DashboardCard[];
@@ -222,43 +223,57 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
               <span className="font-medium">Dashboard</span>
             </button>
             
-            {!showSettingsModal && (
-              <div className="animate-slideIn" style={{animationDelay: '0.1s'}}>
-                <button
-                  onClick={async () => {
-                    if (editMode) {
-                      await setDashboardCards([...dashboardCards]);
-                      setSwapMode(false);
-                      setFirstSwapCard(null);
-                    }
-                    setEditMode(!editMode);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 ${
-                    editMode ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                  }`}
+            <AnimatePresence>
+              {!showSettingsModal && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2, delay: 0.05 }}
                 >
-                  <Edit className="w-4 h-4" />
-                  <span className="text-sm">{editMode ? 'Save Layout' : 'Edit Layout'}</span>
-                </button>
-              </div>
-            )}
+                  <button
+                    onClick={async () => {
+                      if (editMode) {
+                        await setDashboardCards([...dashboardCards]);
+                        setSwapMode(false);
+                        setFirstSwapCard(null);
+                      }
+                      setEditMode(!editMode);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 ${
+                      editMode ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    <Edit className="w-4 h-4" />
+                    <span className="text-sm">{editMode ? 'Save Layout' : 'Edit Layout'}</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
-            {editMode && !showSettingsModal && (
-              <div className="animate-slideIn" style={{animationDelay: '0.2s'}}>
-                <button
-                  onClick={() => {
-                    setSwapMode(!swapMode);
-                    setFirstSwapCard(null);
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 ${
-                    swapMode ? 'bg-green-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                  }`}
+            <AnimatePresence>
+              {editMode && !showSettingsModal && (
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.2, delay: 0.1 }}
                 >
-                  <ArrowLeftRight className="w-4 h-4" />
-                  <span className="text-sm">{swapMode ? 'Exit Swap' : 'Swap Cards'}</span>
-                </button>
-              </div>
-            )}
+                  <button
+                    onClick={() => {
+                      setSwapMode(!swapMode);
+                      setFirstSwapCard(null);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 ${
+                      swapMode ? 'bg-green-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    <ArrowLeftRight className="w-4 h-4" />
+                    <span className="text-sm">{swapMode ? 'Exit Swap' : 'Swap Cards'}</span>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
             
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
               Management
@@ -330,40 +345,56 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
         
         {/* Dashboard Content */}
         <main className="p-4 lg:p-8">
-          {showSettingsModal ? (
-            <div className="max-w-2xl mx-auto animate-fadeIn">
-              <div className="mb-6 animate-slideIn">
-                <h2 className="text-2xl font-bold text-white">Settings</h2>
-                <p className="text-gray-400">Manage your application settings</p>
-              </div>
-              
-              <div className="bg-gray-900 rounded-xl p-6 border border-gray-700 animate-scaleIn" style={{animationDelay: '0.1s'}}>
-                <h3 className="text-xl font-semibold text-white mb-4">Data Management</h3>
-                <p className="text-gray-400 mb-4">
-                  Reset all your transaction data. This action cannot be undone.
-                </p>
-                <button
-                  onClick={() => {
-                    setShowSettingsModal(false);
-                    navigate('/settings');
-                  }}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          <AnimatePresence mode="wait">
+            {showSettingsModal ? (
+              <motion.div
+                key="settings"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+                className="max-w-2xl mx-auto"
+              >
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2, delay: 0.05 }}
+                  className="mb-6"
                 >
-                  Reset Data
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-6 lg:space-y-0 animate-fadeIn">
-              {/* Sidebar Cards */}
-              <div className="lg:col-span-1 space-y-6">
-                {sidebarSlots.map((card, index) => (
-                  <div key={`sidebar-${index}`}>
-                    {renderCard(card, 'sidebar', card ? card.sectionIndex || index : sidebarCards.length)}
-                  </div>
-                ))}
-              </div>
-              
+                  <h2 className="text-2xl font-bold text-white">Settings</h2>
+                  <p className="text-gray-400">Manage your application settings</p>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2, delay: 0.1 }}
+                  className="bg-gray-900 rounded-xl p-6 border border-gray-700"
+                >
+                  <h3 className="text-xl font-semibold text-white mb-4">Data Management</h3>
+                  <p className="text-gray-400 mb-4">
+                    Reset all your transaction data. This action cannot be undone.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      navigate('/settings');
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Reset Data
+                  </button>
+                </motion.div>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="dashboard"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+                className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-6 lg:space-y-0"
+              >
               {/* Main Cards */}
               <div className="lg:col-span-3 space-y-6">
                 {/* Mobile: Only TransactionList */}
@@ -385,8 +416,18 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                   ))}
                 </div>
               </div>
-            </div>
-          )}
+              
+              {/* Sidebar Cards */}
+              <div className="lg:col-span-1 space-y-6">
+                {sidebarSlots.map((card, index) => (
+                  <div key={`sidebar-${index}`}>
+                    {renderCard(card, 'sidebar', card ? card.sectionIndex || index : sidebarCards.length)}
+                  </div>
+                ))}
+              </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
       </div>
       

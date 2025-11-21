@@ -59,9 +59,15 @@ export default function SpendingTrends({ transactions }: Props) {
     labels: monthlyData.map(d => d.month),
     datasets: [
       {
-        label: 'Balance',
+        label: '',
         data: monthlyData.map(d => d.balance),
-        borderColor: '#8b5cf6',
+        borderColor: (context: any) => {
+          const ctx = context.chart.ctx;
+          const gradient = ctx.createLinearGradient(0, 0, ctx.canvas.width, 0);
+          gradient.addColorStop(0, '#8b5cf6');
+          gradient.addColorStop(1, '#ec4899');
+          return gradient;
+        },
         backgroundColor: (context: any) => {
           const ctx = context.chart.ctx;
           const gradient = ctx.createLinearGradient(0, 0, 0, 200);
@@ -72,8 +78,6 @@ export default function SpendingTrends({ transactions }: Props) {
         tension: 0.4,
         fill: true,
         pointBackgroundColor: '#8b5cf6',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
         pointRadius: 6,
         pointHoverRadius: 8,
         borderWidth: 3,
@@ -92,6 +96,9 @@ export default function SpendingTrends({ transactions }: Props) {
       legend: {
         display: false
       },
+      datalabels: {
+        display: false
+      },
       tooltip: {
         backgroundColor: 'rgba(17, 24, 39, 0.95)',
         titleColor: '#f1f5f9',
@@ -100,13 +107,18 @@ export default function SpendingTrends({ transactions }: Props) {
         borderWidth: 1,
         cornerRadius: 12,
         padding: 12,
+        titleAlign: 'left',
+        bodyAlign: 'left',
+        rtl: false,
+        textDirection: 'ltr',
+        displayColors: false,
         callbacks: {
           title: (context: any) => context[0].label,
-          label: (context: any) => {
+          label: () => null,
+          afterLabel: (context: any) => {
             const dataIndex = context.dataIndex;
             const monthData = monthlyData[dataIndex];
             return [
-              `Balance: ${formatIDR(monthData.balance)}`,
               `Income: ${formatIDR(monthData.income)}`,
               `Expenses: ${formatIDR(monthData.expenses)}`
             ];
