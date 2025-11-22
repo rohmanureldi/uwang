@@ -1,13 +1,15 @@
 import { useState } from 'react';
-import { Transaction } from '../types';
+import { Transaction, Wallet } from '../types';
 import CategoryModal from './CategoryModal';
+import { Wallet2 } from 'lucide-react';
 
 interface Props {
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   selectedWallet?: string;
+  wallets: Wallet[];
 }
 
-export default function TransactionForm({ onAddTransaction, selectedWallet = '' }: Props) {
+export default function TransactionForm({ onAddTransaction, selectedWallet = '', wallets }: Props) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -17,7 +19,9 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '' 
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [amountError, setAmountError] = useState('');
   const [categoryError, setCategoryError] = useState('');
+  const [walletError, setWalletError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formWallet, setFormWallet] = useState(selectedWallet === 'global' ? '' : selectedWallet);
 
   const formatNumber = (value: string) => {
     const num = value.replace(/\D/g, '');
@@ -38,6 +42,7 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '' 
     e.preventDefault();
     setAmountError('');
     setCategoryError('');
+    setWalletError('');
     
     // Validate amount
     const cleanAmount = amount.replace(/\./g, '');
@@ -54,6 +59,12 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '' 
       setTimeout(() => setCategoryError(''), 3000);
       return;
     }
+    
+    if (!formWallet) {
+      setWalletError('Pilih wallet terlebih dahulu');
+      setTimeout(() => setWalletError(''), 3000);
+      return;
+    }
 
     if (isSubmitting) return;
     
@@ -66,13 +77,14 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '' 
         type,
         date,
         time,
-        wallet_id: selectedWallet
+        wallet_id: formWallet
       });
 
       // Reset form on successful submission
       setAmount('');
       setDescription('');
       setCategory('');
+      setFormWallet('');
     } catch (error) {
       console.error('Error adding transaction:', error);
     } finally {
@@ -145,6 +157,32 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '' 
               </div>
             )}
           </div>
+        </div>
+        
+        <div>
+          <div className="flex items-center gap-2 px-3 py-3 border border-gray-600 bg-gray-800 rounded-lg">
+            <Wallet2 className="w-4 h-4 text-purple-400" />
+            <select
+              value={formWallet}
+              onChange={(e) => {
+                setFormWallet(e.target.value);
+                if (walletError) setWalletError('');
+              }}
+              className="bg-transparent text-gray-100 text-sm focus:outline-none flex-1"
+            >
+              <option value="">Pilih Wallet</option>
+              {wallets.filter(w => w.id !== 'global').map((wallet) => (
+                <option key={wallet.id} value={wallet.id}>
+                  {wallet.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          {walletError && (
+            <div className="mt-1 text-red-400 text-sm animate-fadeIn">
+              {walletError}
+            </div>
+          )}
         </div>
 
         <input

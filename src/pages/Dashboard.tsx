@@ -136,7 +136,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       case 'savings':
         return <SavingsGoals />;
       case 'form':
-        return <TransactionForm onAddTransaction={addTransaction} selectedWallet={selectedWallet} />;
+        return <TransactionForm onAddTransaction={addTransaction} selectedWallet={selectedWallet} wallets={wallets} />;
       case 'list':
         const isInSidebar = sidebarSlots.some(c => c?.id === 'list');
         return <TransactionList 
@@ -546,6 +546,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                   setShowTransactionModal(false);
                 }}
                 selectedWallet={selectedWallet}
+                wallets={wallets}
               />
             </div>
           </div>
