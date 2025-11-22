@@ -37,7 +37,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
   const [selectedWallet, setSelectedWallet] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
 
-  const { transactions, loading, addTransaction, editTransaction, deleteTransaction, deleteTransactionsByWallet, resetData } = useTransactions();
+  const { transactions, loading, addTransaction, editTransaction, deleteTransaction, importTransactions, deleteTransactionsByWallet, resetData } = useTransactions();
   const { wallets, updateWalletBalance, refreshWallets } = useWallets(transactions);
   
   // Set default wallet when wallets load
@@ -124,7 +124,8 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       case 'quickstats':
         return <QuickStats transactions={filteredTransactions} />;
       case 'categorycharts':
-        return <CategoryCharts transactions={filteredTransactions} />;
+        const categoryChartsInSidebar = sidebarSlots.some(c => c?.id === 'categorycharts');
+        return <CategoryCharts transactions={filteredTransactions} isInSidebar={categoryChartsInSidebar} />;
       case 'health':
         return <FinancialHealth transactions={transactions} />;
       case 'insights':
@@ -155,6 +156,14 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
           transactions={filteredTransactions} 
           onEditTransaction={editTransaction}
           onDeleteTransaction={deleteTransaction}
+          onImportTransactions={(transactions, walletId) => {
+            const transactionsWithWallet = transactions.map(t => ({
+              ...t,
+              wallet_id: walletId === 'global' ? undefined : walletId
+            }));
+            importTransactions(transactionsWithWallet);
+          }}
+          wallets={wallets}
           isInSidebar={isInSidebar}
         />;
 
@@ -490,6 +499,14 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                     transactions={filteredTransactions} 
                     onEditTransaction={editTransaction}
                     onDeleteTransaction={deleteTransaction}
+                    onImportTransactions={(transactions, walletId) => {
+                      const transactionsWithWallet = transactions.map(t => ({
+                        ...t,
+                        wallet_id: walletId === 'global' ? undefined : walletId
+                      }));
+                      importTransactions(transactionsWithWallet);
+                    }}
+                    wallets={wallets}
                     isInSidebar={false}
                   />
                 </div>

@@ -6,9 +6,10 @@ import { PieChart, TrendingUp, DollarSign, TrendingDown } from 'lucide-react';
 
 interface Props {
   transactions: Transaction[];
+  isInSidebar?: boolean;
 }
 
-export default function CategoryCharts({ transactions }: Props) {
+export default function CategoryCharts({ transactions, isInSidebar = false }: Props) {
   console.log('CategoryCharts component rendered with transactions:', transactions);
   
   const { incomeByCategory, expenseByCategory } = useMemo(() => {
@@ -58,9 +59,13 @@ export default function CategoryCharts({ transactions }: Props) {
         labels: {
           color: '#d1d5db',
           usePointStyle: true,
-          padding: 15,
-          font: { size: 11 }
+          padding: 8,
+          font: { size: 10 },
+          boxWidth: 12,
+          boxHeight: 12
         },
+        maxHeight: 80,
+        align: 'start' as const,
         onHover: (event: any, legendItem: any, legend: any) => {
           const chart = legend.chart;
           const canvas = chart.canvas;
@@ -144,15 +149,17 @@ export default function CategoryCharts({ transactions }: Props) {
   }
 
   return (
-    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 shadow-lg border border-gray-700 animate-scaleIn overflow-visible">
+    <div className="bg-gray-900 rounded-xl p-4 sm:p-6 pb-12 shadow-lg border border-gray-700 animate-scaleIn overflow-visible">
       <h3 className="font-semibold text-gray-100 mb-4 text-lg flex items-center gap-2">
         <PieChart className="w-5 h-5 text-purple-400" /> Grafik Kategori
       </h3>
       
-      <div className={`grid gap-6 overflow-visible ${
-        Object.keys(incomeByCategory).length > 0 && Object.keys(expenseByCategory).length > 0 
-          ? 'grid-cols-1 lg:grid-cols-2' 
-          : 'grid-cols-1 place-items-center'
+      <div className={`grid gap-6 overflow-visible pb-8 ${
+        isInSidebar 
+          ? 'grid-cols-1' 
+          : Object.keys(incomeByCategory).length > 0 && Object.keys(expenseByCategory).length > 0 
+            ? 'grid-cols-1 lg:grid-cols-2' 
+            : 'grid-cols-1 place-items-center'
       }`}>
         {Object.keys(incomeByCategory).length > 0 && (
           <div key="income-chart">

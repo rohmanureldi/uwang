@@ -213,6 +213,33 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
     }
   };
 
+  const importTransactions = async (importedTransactions: Omit<Transaction, 'id'>[]) => {
+    const newTransactions = importedTransactions.map(t => ({
+      ...t,
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      created_at: new Date().toISOString()
+    }));
+
+    const updated = [...newTransactions, ...transactions];
+    setTransactions(updated);
+    localStorage.setItem('transactions', JSON.stringify(updated));
+
+    if (syncService.getStatus().isOnline && supabase && !useLocalStorage) {
+      try {
+        const { error } = await supabase
+          .from('transactions')
+          .insert(importedTransactions);
+
+        if (error) throw error;
+      } catch (error) {
+        console.error('Failed to sync imported transactions:', error);
+        newTransactions.forEach(t => syncService.addPendingTransaction(t));
+      }
+    } else {
+      newTransactions.forEach(t => syncService.addPendingTransaction(t));
+    }
+  };
+
   const deleteTransactionsByWallet = async (walletId: string) => {
     if (useLocalStorage || !supabase) {
       const updated = transactions.filter(t => t.wallet_id !== walletId && t.wallet_id !== null && t.wallet_id !== undefined);
@@ -243,6 +270,7 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
     addTransaction,
     editTransaction,
     deleteTransaction,
+    importTransactions,
     deleteTransactionsByWallet,
     resetData
   };
