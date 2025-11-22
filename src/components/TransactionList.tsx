@@ -14,11 +14,16 @@ interface Props {
   onImportTransactions?: (transactions: Omit<Transaction, 'id'>[], walletId: string) => void;
   wallets?: Array<{ id: string; name: string; color?: string; icon?: string; }>;
   isInSidebar?: boolean;
+  selectedWallet?: string;
 }
 
-export default function TransactionList({ transactions, onEditTransaction, onDeleteTransaction, onImportTransactions, wallets = [], isInSidebar = false }: Props) {
+export default function TransactionList({ transactions, onEditTransaction, onDeleteTransaction, onImportTransactions, wallets = [], isInSidebar = false, selectedWallet }: Props) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showSubcategorySuggestions, setShowSubcategorySuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [showDescriptionSuggestions, setShowDescriptionSuggestions] = useState(false);
+  const [selectedDescriptionIndex, setSelectedDescriptionIndex] = useState(-1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
@@ -46,6 +51,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
     amount: '',
     description: '',
     category: '',
+    subcategory: '',
     type: 'expense' as 'income' | 'expense',
     date: '',
     time: ''
@@ -57,6 +63,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       amount: transaction.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'),
       description: transaction.description,
       category: transaction.category,
+      subcategory: transaction.subcategory || '',
       type: transaction.type,
       date: transaction.date,
       time: transaction.time || ''
@@ -79,6 +86,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       amount: parseFloat(editForm.amount.replace(/\./g, '')),
       description: editForm.description,
       category: editForm.category,
+      subcategory: editForm.subcategory || undefined,
       type: editForm.type,
       date: editForm.date,
       time: editForm.time
@@ -460,13 +468,156 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                       {editForm.category || 'Pilih Kategori'}
                     </button>
                   </div>
-                  <input
-                    type="text"
-                    value={editForm.description}
-                    onChange={(e) => setEditForm({...editForm, description: e.target.value})}
-                    className="w-full px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
-                    placeholder="Deskripsi"
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editForm.description}
+                      onChange={(e) => {
+                        setEditForm({...editForm, description: e.target.value});
+                        setSelectedDescriptionIndex(-1);
+                      }}
+                      onFocus={() => setShowDescriptionSuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowDescriptionSuggestions(false), 200)}
+                      onKeyDown={(e) => {
+                        const descriptionMap = new Map();
+                        transactions.forEach(t => {
+                          if (t.description && t.description.toLowerCase().includes(editForm.description.toLowerCase())) {
+                            descriptionMap.set(t.description, t.created_at || t.date);
+                          }
+                        });
+                        const existingDescriptions = Array.from(descriptionMap.entries())
+                          .sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime())
+                          .map(([description]) => description)
+                          .slice(0, 5);
+                        
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setSelectedDescriptionIndex(prev => prev < existingDescriptions.length - 1 ? prev + 1 : prev);
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setSelectedDescriptionIndex(prev => prev > 0 ? prev - 1 : -1);
+                        } else if (e.key === 'Enter' && selectedDescriptionIndex >= 0) {
+                          e.preventDefault();
+                          setEditForm({...editForm, description: existingDescriptions[selectedDescriptionIndex]});
+                          setShowDescriptionSuggestions(false);
+                          setSelectedDescriptionIndex(-1);
+                        } else if (e.key === 'Escape') {
+                          setShowDescriptionSuggestions(false);
+                          setSelectedDescriptionIndex(-1);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
+                      placeholder="Deskripsi"
+                    />
+                    {showDescriptionSuggestions && (() => {
+                      const descriptionMap = new Map();
+                      transactions.forEach(t => {
+                        if (t.description && t.description.toLowerCase().includes(editForm.description.toLowerCase())) {
+                          descriptionMap.set(t.description, t.created_at || t.date);
+                        }
+                      });
+                      const existingDescriptions = Array.from(descriptionMap.entries())
+                        .sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime())
+                        .map(([description]) => description)
+                        .slice(0, 5);
+                      
+                      return existingDescriptions.length > 0 ? (
+                        <div className="absolute top-full left-0 right-0 bg-slate-700 border border-slate-500 rounded mt-1 max-h-32 overflow-y-auto z-10">
+                          {existingDescriptions.map((desc, index) => (
+                            <button
+                              key={desc}
+                              type="button"
+                              onClick={() => {
+                                setEditForm({...editForm, description: desc});
+                                setShowDescriptionSuggestions(false);
+                                setSelectedDescriptionIndex(-1);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-gray-100 text-sm ${
+                                index === selectedDescriptionIndex ? 'bg-purple-600' : 'hover:bg-slate-600'
+                              }`}
+                            >
+                              {desc}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={editForm.subcategory}
+                      onChange={(e) => {
+                        setEditForm({...editForm, subcategory: e.target.value});
+                        setSelectedSuggestionIndex(-1);
+                      }}
+                      onFocus={() => setShowSubcategorySuggestions(true)}
+                      onBlur={() => setTimeout(() => setShowSubcategorySuggestions(false), 200)}
+                      onKeyDown={(e) => {
+                        const subcategoryMap = new Map();
+                        transactions.forEach(t => {
+                          if (t.subcategory && t.subcategory.toLowerCase().includes(editForm.subcategory.toLowerCase())) {
+                            subcategoryMap.set(t.subcategory, t.created_at || t.date);
+                          }
+                        });
+                        const existingSubcategories = Array.from(subcategoryMap.entries())
+                          .sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime())
+                          .map(([subcategory]) => subcategory)
+                          .slice(0, 5);
+                        
+                        if (e.key === 'ArrowDown') {
+                          e.preventDefault();
+                          setSelectedSuggestionIndex(prev => prev < existingSubcategories.length - 1 ? prev + 1 : prev);
+                        } else if (e.key === 'ArrowUp') {
+                          e.preventDefault();
+                          setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+                        } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+                          e.preventDefault();
+                          setEditForm({...editForm, subcategory: existingSubcategories[selectedSuggestionIndex]});
+                          setShowSubcategorySuggestions(false);
+                          setSelectedSuggestionIndex(-1);
+                        } else if (e.key === 'Escape') {
+                          setShowSubcategorySuggestions(false);
+                          setSelectedSuggestionIndex(-1);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-slate-500 bg-slate-600 text-gray-100 rounded text-sm placeholder-gray-400"
+                      placeholder="Subkategori (Opsional)"
+                    />
+                    {showSubcategorySuggestions && (() => {
+                      const subcategoryMap = new Map();
+                      transactions.forEach(t => {
+                        if (t.subcategory && t.subcategory.toLowerCase().includes(editForm.subcategory.toLowerCase())) {
+                          subcategoryMap.set(t.subcategory, t.created_at || t.date);
+                        }
+                      });
+                      const existingSubcategories = Array.from(subcategoryMap.entries())
+                        .sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime())
+                        .map(([subcategory]) => subcategory)
+                        .slice(0, 5);
+                      
+                      return existingSubcategories.length > 0 ? (
+                        <div className="absolute top-full left-0 right-0 bg-slate-700 border border-slate-500 rounded mt-1 max-h-32 overflow-y-auto z-10">
+                          {existingSubcategories.map((sub, index) => (
+                            <button
+                              key={sub}
+                              type="button"
+                              onClick={() => {
+                                setEditForm({...editForm, subcategory: sub});
+                                setShowSubcategorySuggestions(false);
+                                setSelectedSuggestionIndex(-1);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-gray-100 text-sm ${
+                                index === selectedSuggestionIndex ? 'bg-purple-600' : 'hover:bg-slate-600'
+                              }`}
+                            >
+                              {sub}
+                            </button>
+                          ))}
+                        </div>
+                      ) : null;
+                    })()}
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
                     <input
                       type="date"
@@ -512,17 +663,30 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                     <p className={`font-medium text-gray-100 truncate ${
                       isInSidebar ? 'text-xs' : 'text-sm sm:text-base'
                     }`}>{transaction.description || (transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran')}</p>
-                    <div className={`flex items-center gap-2 text-gray-400 ${
+                    <div className={`text-gray-400 space-y-1 ${
                       isInSidebar ? 'text-xs' : 'text-xs sm:text-sm'
                     }`}>
-                      <span className="flex items-center gap-1">
-                        {(() => {
-                          const IconComponent = getCategoryIcon(transaction.category);
-                          return <IconComponent className="w-3 h-3 text-purple-400" />;
-                        })()}
-                        <span className={isInSidebar ? 'truncate max-w-16' : ''}>{transaction.category}</span>
-                      </span>
-                      {transaction.time && !isInSidebar && <span>• {transaction.time}</span>}
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1">
+                          {(() => {
+                            const IconComponent = getCategoryIcon(transaction.category);
+                            return <IconComponent className="w-3 h-3 text-purple-400" />;
+                          })()}
+                          <span className={isInSidebar ? 'truncate max-w-16' : ''}>{transaction.category}</span>
+                        </span>
+                        {transaction.time && !isInSidebar && <span>• {transaction.time}</span>}
+                      </div>
+                      {selectedWallet === 'global' && transaction.wallet_id && (
+                        <div className="flex items-center gap-1">
+                          <div 
+                            className="w-2 h-2 rounded-full" 
+                            style={{ backgroundColor: wallets.find(w => w.id === transaction.wallet_id)?.color || '#8b5cf6' }}
+                          />
+                          <span className="text-xs text-gray-500">
+                            {wallets.find(w => w.id === transaction.wallet_id)?.name || 'Unknown'}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
@@ -568,6 +732,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                   <th className="px-4 py-3 text-left text-gray-300 font-medium">Date</th>
                   <th className="px-4 py-3 text-left text-gray-300 font-medium">Description</th>
                   <th className="px-4 py-3 text-left text-gray-300 font-medium">Category</th>
+                  <th className="px-4 py-3 text-left text-gray-300 font-medium">Subcategory</th>
+                  {selectedWallet === 'global' && <th className="px-4 py-3 text-left text-gray-300 font-medium">Wallet</th>}
                   <th className="px-4 py-3 text-right text-gray-300 font-medium">Amount</th>
                   <th className="px-4 py-3 text-center text-gray-300 font-medium">Actions</th>
                 </tr>
@@ -592,6 +758,22 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                           <span>{transaction.category}</span>
                         </div>
                       </td>
+                      <td className="px-4 py-3 text-gray-300 text-sm">
+                        {transaction.subcategory || '-'}
+                      </td>
+                      {selectedWallet === 'global' && (
+                        <td className="px-4 py-3 text-gray-300 text-sm">
+                          {transaction.wallet_id && (
+                            <div className="flex items-center gap-2">
+                              <div 
+                                className="w-3 h-3 rounded-full" 
+                                style={{ backgroundColor: wallets.find(w => w.id === transaction.wallet_id)?.color || '#8b5cf6' }}
+                              />
+                              <span>{wallets.find(w => w.id === transaction.wallet_id)?.name || 'Unknown'}</span>
+                            </div>
+                          )}
+                        </td>
+                      )}
                       <td className={`px-4 py-3 text-right font-medium ${
                         transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
                       }`}>

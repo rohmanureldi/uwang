@@ -17,7 +17,7 @@ import WalletBalance from '../components/WalletBalance';
 import WalletManager from '../components/WalletManager';
 import WalletSelector from '../components/WalletSelector';
 import { DashboardCard } from '../components/DashboardCustomizer';
-import { DollarSign, Settings, ArrowLeftRight, Edit, Plus, X, Lightbulb, BarChart3, Wallet2 } from 'lucide-react';
+import { DollarSign, Settings, ArrowLeftRight, Edit, Plus, X, Lightbulb, BarChart3, Wallet2, Menu } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
@@ -36,6 +36,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
   const [showWalletManager, setShowWalletManager] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const { transactions, loading, addTransaction, editTransaction, deleteTransaction, importTransactions, deleteTransactionsByWallet, resetData } = useTransactions();
   const { wallets, updateWalletBalance, refreshWallets } = useWallets(transactions);
@@ -165,6 +166,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
           }}
           wallets={wallets}
           isInSidebar={isInSidebar}
+          selectedWallet={selectedWallet}
         />;
 
         default:
@@ -248,7 +250,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
           </div>
           
           {/* Navigation */}
-          <nav className="flex-1 px-4 py-6 space-y-2">
+          <nav className="flex-1 px-4 py-6 space-y-2 pb-32">
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3">
               Overview
             </div>
@@ -356,12 +358,20 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
               <div className="text-xs text-gray-400 mb-1">Total Balance</div>
               <div className={`text-lg font-bold ${
                 (() => {
-                  const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+                  const totalBalance = transactions.reduce((total, transaction) => {
+                    return transaction.type === 'income' 
+                      ? total + transaction.amount 
+                      : total - transaction.amount;
+                  }, 0);
                   return totalBalance >= 0 ? 'text-green-400' : 'text-red-400';
                 })()
               }`}>
                 {(() => {
-                  const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+                  const totalBalance = transactions.reduce((total, transaction) => {
+                    return transaction.type === 'income' 
+                      ? total + transaction.amount 
+                      : total - transaction.amount;
+                  }, 0);
                   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalBalance);
                 })()
                 }
@@ -376,12 +386,20 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
         {/* Top Bar */}
         <header className="bg-gray-900 border-b border-gray-700 px-4 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            {/* Mobile Logo */}
-            <div className="lg:hidden flex items-center">
-              <DollarSign className="w-6 h-6 text-purple-400" />
-              <h1 className="ml-2 text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-                Uwang
-              </h1>
+            {/* Mobile Logo and Menu */}
+            <div className="lg:hidden flex items-center gap-3">
+              <button
+                onClick={() => setShowMobileMenu(true)}
+                className="bg-gray-800 rounded-lg p-2 border border-gray-700 hover:bg-gray-700 transition-colors"
+              >
+                <Menu className="w-5 h-5 text-gray-300" />
+              </button>
+              <div className="flex items-center">
+                <DollarSign className="w-6 h-6 text-purple-400" />
+                <h1 className="ml-2 text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                  Uwang
+                </h1>
+              </div>
             </div>
             
             {/* Desktop Title */}
@@ -390,21 +408,18 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
               <p className="text-sm text-gray-400">Monitor your financial health and transactions</p>
             </div>
             
-            {/* Right Side - Wallet Picker and Settings */}
+            {/* Right Side - Wallet Picker */}
             <div className="flex items-center gap-3">
               {/* Desktop Wallet Picker */}
               <div className="hidden lg:block">
                 <WalletSelector selectedWallet={selectedWallet} onWalletChange={setSelectedWallet} wallets={wallets} />
               </div>
-              
-              {/* Mobile Settings */}
-              <button 
-                onClick={() => setShowSettingsModal(true)}
-                className="lg:hidden bg-gray-800 rounded-lg p-2 border border-gray-700 hover:bg-gray-700 transition-colors"
-              >
-                <Settings className="w-5 h-5 text-gray-300" />
-              </button>
             </div>
+          </div>
+          
+          {/* Mobile Wallet Selector */}
+          <div className="lg:hidden mt-3 pt-3 border-t border-gray-700">
+            <WalletSelector selectedWallet={selectedWallet} onWalletChange={setSelectedWallet} wallets={wallets} />
           </div>
         </header>
         
@@ -440,7 +455,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                     onWalletChange={refreshWallets}
                     selectedWallet={selectedWallet}
                     onWalletSelect={setSelectedWallet}
-                    onDeleteTransactions={deleteTransactionsByWallet}
+                    deleteTransactionsByWallet={deleteTransactionsByWallet}
                     transactions={transactions}
                   />
                 </motion.div>
@@ -460,23 +475,23 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                   transition={{ duration: 0.2, delay: 0.05 }}
                   className="mb-6"
                 >
-                  <h2 className="text-2xl font-bold text-white">Settings</h2>
-                  <p className="text-gray-400">Manage your application settings</p>
+                  <h2 className="text-xl lg:text-2xl font-bold text-white">Settings</h2>
+                  <p className="text-gray-400 text-sm lg:text-base">Manage your application settings</p>
                 </motion.div>
                 
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.2, delay: 0.1 }}
-                  className="bg-gray-900 rounded-xl p-6 border border-gray-700"
+                  className="bg-gray-900 rounded-xl p-4 lg:p-6 border border-gray-700"
                 >
-                  <h3 className="text-xl font-semibold text-white mb-4">Data Management</h3>
-                  <p className="text-gray-400 mb-4">
+                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-4">Data Management</h3>
+                  <p className="text-gray-400 mb-6 text-sm lg:text-base">
                     Reset all your data. This action cannot be undone.
                   </p>
                   <button
                     onClick={() => setShowResetModal(true)}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="w-full lg:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm lg:text-base min-h-[44px]"
                   >
                     Reset Data
                   </button>
@@ -508,6 +523,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                     }}
                     wallets={wallets}
                     isInSidebar={false}
+                    selectedWallet={selectedWallet}
                   />
                 </div>
                 
@@ -535,15 +551,17 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
         </main>
       </div>
       
-      {/* Mobile Floating Add Button */}
-      <div className="lg:hidden fixed bottom-6 right-6 z-50">
-        <button
-          onClick={() => setShowTransactionModal(true)}
-          className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-2xl transition-all transform hover:scale-105 border-4 border-black"
-        >
-          <Plus className="w-7 h-7" />
-        </button>
-      </div>
+      {/* Mobile Floating Add Button - Only show on Dashboard */}
+      {!showWalletManager && !showSettingsModal && (
+        <div className="lg:hidden fixed bottom-6 right-6 z-50">
+          <button
+            onClick={() => setShowTransactionModal(true)}
+            className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-2xl transition-all transform hover:scale-105 border-4 border-black"
+          >
+            <Plus className="w-7 h-7" />
+          </button>
+        </div>
+      )}
         
       {/* Mobile Transaction Form Modal */}
       {showTransactionModal && (
@@ -553,22 +571,22 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
           onClick={() => setShowTransactionModal(false)}
         >
           <div 
-            className="bg-gray-900 rounded-t-2xl w-full max-h-[85vh] overflow-y-auto border-t border-gray-700 shadow-2xl animate-scaleIn"
+            className="bg-gray-900 rounded-t-2xl w-full max-h-[90vh] overflow-y-auto border-t border-gray-700 shadow-2xl animate-scaleIn"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="px-6 py-4 border-b border-gray-700 flex justify-between items-center">
+            <div className="px-4 py-4 border-b border-gray-700 flex justify-between items-center sticky top-0 bg-gray-900 z-10">
               <div>
                 <h3 className="text-lg font-semibold text-white">Add Transaction</h3>
                 <p className="text-sm text-gray-400">Record your income or expense</p>
               </div>
               <button
                 onClick={() => setShowTransactionModal(false)}
-                className="text-gray-400 hover:text-white bg-gray-800 rounded-full p-2 transition-colors"
+                className="text-gray-400 hover:text-white bg-gray-800 rounded-full p-3 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-6">
+            <div className="p-4 pb-8">
               <TransactionForm 
                 onAddTransaction={(transaction) => {
                   addTransaction(transaction);
@@ -594,34 +612,127 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
         {/* Card Selection Modal */}
         {showCardModal && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(10px)' }}>
-            <div className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-lg w-full">
-              <div className="px-6 py-4 border-b border-gray-700">
+            <div className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-lg w-full max-h-[80vh] flex flex-col">
+              <div className="px-4 lg:px-6 py-4 border-b border-gray-700">
                 <h3 className="text-lg font-semibold text-white">Add Widget</h3>
                 <p className="text-sm text-gray-400 mt-1">Choose a widget to add to your dashboard</p>
               </div>
               
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-3 max-h-80 overflow-y-auto">
+              <div className="p-4 lg:p-6 flex-1 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-3">
                   {dashboardCards.filter(card => !card.enabled || card.section === undefined).map((card) => (
                     <button
                       key={card.id}
                       onClick={() => handleCardSelect(card.id)}
-                      className="flex flex-col items-center gap-3 p-4 bg-gray-800 rounded-lg hover:bg-gray-700 hover:border-purple-500 border border-gray-600 transition-all text-center group"
+                      className="flex flex-col items-center gap-3 p-4 lg:p-6 bg-gray-800 rounded-lg hover:bg-gray-700 hover:border-purple-500 border border-gray-600 transition-all text-center group min-h-[80px] lg:min-h-[100px]"
                     >
-                      <span className="text-2xl group-hover:scale-110 transition-transform">{card.icon}</span>
-                      <span className="text-gray-100 text-sm font-medium">{card.name}</span>
+                      <span className="text-xl lg:text-2xl group-hover:scale-110 transition-transform">{card.icon}</span>
+                      <span className="text-gray-100 text-xs lg:text-sm font-medium">{card.name}</span>
                     </button>
                   ))}
                 </div>
               </div>
               
-              <div className="px-6 py-4 border-t border-gray-700">
+              <div className="px-4 lg:px-6 py-4 border-t border-gray-700">
                 <button
                   onClick={() => setShowCardModal(false)}
-                  className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                  className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium min-h-[44px]"
                 >
                   Cancel
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Mobile Menu */}
+        {showMobileMenu && (
+          <div className="lg:hidden fixed inset-0 bg-black bg-opacity-60 z-50" style={{ backdropFilter: 'blur(10px)' }}>
+            <div className="bg-gray-900 w-80 h-full shadow-2xl">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+                <div className="flex items-center">
+                  <DollarSign className="w-6 h-6 text-purple-400" />
+                  <h1 className="ml-2 text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+                    Uwang
+                  </h1>
+                </div>
+                <button
+                  onClick={() => setShowMobileMenu(false)}
+                  className="text-gray-400 hover:text-white bg-gray-800 rounded-full p-2 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              <nav className="px-4 py-6 space-y-2">
+                <button
+                  onClick={() => {
+                    setShowSettingsModal(false);
+                    setShowWalletManager(false);
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    !showSettingsModal && !showWalletManager ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  }`}
+                >
+                  <BarChart3 className="w-5 h-5" />
+                  <span className="font-medium">Dashboard</span>
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    setShowWalletManager(true);
+                    setShowSettingsModal(false);
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    showWalletManager ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  }`}
+                >
+                  <Wallet2 className="w-5 h-5" />
+                  <span>Wallets</span>
+                </button>
+                
+                <button 
+                  onClick={() => {
+                    setShowSettingsModal(true);
+                    setShowWalletManager(false);
+                    setShowMobileMenu(false);
+                  }}
+                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                    showSettingsModal ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  }`}
+                >
+                  <Settings className="w-5 h-5" />
+                  <span>Settings</span>
+                </button>
+              </nav>
+              
+              {/* Mobile Balance Summary */}
+              <div className="absolute bottom-0 left-0 right-0 px-4 py-4 border-t border-gray-700 bg-gray-900">
+                <div className="bg-gray-800 rounded-lg p-3">
+                  <div className="text-xs text-gray-400 mb-1">Total Balance</div>
+                  <div className={`text-sm font-bold break-words overflow-hidden ${
+                    (() => {
+                      const totalBalance = transactions.reduce((total, transaction) => {
+                        return transaction.type === 'income' 
+                          ? total + transaction.amount 
+                          : total - transaction.amount;
+                      }, 0);
+                      return totalBalance >= 0 ? 'text-green-400' : 'text-red-400';
+                    })()
+                  }`}>
+                    {(() => {
+                      const totalBalance = transactions.reduce((total, transaction) => {
+                        return transaction.type === 'income' 
+                          ? total + transaction.amount 
+                          : total - transaction.amount;
+                      }, 0);
+                      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalBalance);
+                    })()
+                    }
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -631,12 +742,12 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
         {showResetModal && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(10px)' }}>
             <div className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-md w-full">
-              <div className="px-6 py-4 border-b border-gray-700">
+              <div className="px-4 lg:px-6 py-4 border-b border-gray-700">
                 <h3 className="text-lg font-semibold text-white">Reset All Data</h3>
               </div>
               
-              <div className="p-6">
-                <p className="text-gray-300 mb-4">This will permanently delete:</p>
+              <div className="p-4 lg:p-6">
+                <p className="text-gray-300 mb-4 text-sm lg:text-base">This will permanently delete:</p>
                 <ul className="text-gray-400 text-sm space-y-2 mb-6">
                   <li>• All transactions</li>
                   <li>• All wallets</li>
@@ -646,10 +757,10 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 <p className="text-red-400 text-sm font-medium">This action cannot be undone!</p>
               </div>
               
-              <div className="px-6 py-4 border-t border-gray-700 flex gap-3">
+              <div className="px-4 lg:px-6 py-4 border-t border-gray-700 flex flex-col lg:flex-row gap-3">
                 <button
                   onClick={() => setShowResetModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                  className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium min-h-[44px]"
                 >
                   Cancel
                 </button>
@@ -660,7 +771,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                     setShowSettingsModal(false);
                     window.location.reload();
                   }}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium min-h-[44px]"
                 >
                   Reset All Data
                 </button>

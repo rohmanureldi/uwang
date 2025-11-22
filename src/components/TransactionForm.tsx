@@ -14,6 +14,11 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
+  const [subcategory, setSubcategory] = useState('');
+  const [showSubcategorySuggestions, setShowSubcategorySuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
+  const [showDescriptionSuggestions, setShowDescriptionSuggestions] = useState(false);
+  const [selectedDescriptionIndex, setSelectedDescriptionIndex] = useState(-1);
   const [type, setType] = useState<'income' | 'expense'>('expense');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState(new Date().toTimeString().slice(0, 5));
@@ -97,6 +102,7 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
         amount: numericAmount,
         description: description.trim() || (type === 'income' ? 'Pemasukan' : 'Pengeluaran'),
         category: category.trim(),
+        subcategory: subcategory.trim() || undefined,
         type,
         date,
         time,
@@ -107,6 +113,7 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
       setAmount('');
       setDescription('');
       setCategory('');
+      setSubcategory('');
       setFormWallet(getDefaultWallet());
     } catch (error) {
       console.error('Error adding transaction:', error);
@@ -126,6 +133,7 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
             onClick={() => {
               setType('income');
               setCategory('');
+              setSubcategory('');
             }}
             className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               type === 'income'
@@ -140,6 +148,7 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
             onClick={() => {
               setType('expense');
               setCategory('');
+              setSubcategory('');
             }}
             className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
               type === 'expense'
@@ -182,6 +191,84 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
           </div>
         </div>
         
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Subkategori (Opsional)"
+            value={subcategory}
+            onChange={(e) => {
+              setSubcategory(e.target.value);
+              setSelectedSuggestionIndex(-1);
+            }}
+            onFocus={() => setShowSubcategorySuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSubcategorySuggestions(false), 200)}
+            onKeyDown={(e) => {
+              const allTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+              const subcategoryMap = new Map();
+              allTransactions.forEach((t: any) => {
+                if (t.subcategory && t.subcategory.toLowerCase().includes(subcategory.toLowerCase())) {
+                  subcategoryMap.set(t.subcategory, t.created_at || t.date);
+                }
+              });
+              const existingSubcategories = Array.from(subcategoryMap.entries())
+                .sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime())
+                .map(([subcategory]) => subcategory)
+                .slice(0, 5);
+              
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSelectedSuggestionIndex(prev => prev < existingSubcategories.length - 1 ? prev + 1 : prev);
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSelectedSuggestionIndex(prev => prev > 0 ? prev - 1 : -1);
+              } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+                e.preventDefault();
+                setSubcategory(existingSubcategories[selectedSuggestionIndex]);
+                setShowSubcategorySuggestions(false);
+                setSelectedSuggestionIndex(-1);
+              } else if (e.key === 'Escape') {
+                setShowSubcategorySuggestions(false);
+                setSelectedSuggestionIndex(-1);
+              }
+            }}
+            className="w-full px-3 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm placeholder-gray-400 touch-manipulation"
+          />
+          {showSubcategorySuggestions && (() => {
+            const allTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+            const subcategoryMap = new Map();
+            allTransactions.forEach((t: any) => {
+              if (t.subcategory && t.subcategory.toLowerCase().includes(subcategory.toLowerCase())) {
+                subcategoryMap.set(t.subcategory, t.created_at || t.date);
+              }
+            });
+            const existingSubcategories = Array.from(subcategoryMap.entries())
+              .sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime())
+              .map(([subcategory]) => subcategory)
+              .slice(0, 5);
+            
+            return existingSubcategories.length > 0 ? (
+              <div className="absolute top-full left-0 right-0 bg-gray-800 border border-gray-600 rounded-lg mt-1 max-h-40 overflow-y-auto z-10">
+                {existingSubcategories.map((sub: string, index: number) => (
+                  <button
+                    key={sub}
+                    type="button"
+                    onClick={() => {
+                      setSubcategory(sub);
+                      setShowSubcategorySuggestions(false);
+                      setSelectedSuggestionIndex(-1);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-gray-100 text-sm ${
+                      index === selectedSuggestionIndex ? 'bg-purple-600' : 'hover:bg-gray-700'
+                    }`}
+                  >
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            ) : null;
+          })()}
+        </div>
+        
         <div>
           {wallets.filter(w => w.id !== 'global').length === 0 ? (
             <button
@@ -221,13 +308,83 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
           )}
         </div>
 
-        <input
-          type="text"
-          placeholder="Deskripsi"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-3 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm placeholder-gray-400 touch-manipulation"
-        />
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Deskripsi"
+            value={description}
+            onChange={(e) => {
+              setDescription(e.target.value);
+              setSelectedDescriptionIndex(-1);
+            }}
+            onFocus={() => setShowDescriptionSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowDescriptionSuggestions(false), 200)}
+            onKeyDown={(e) => {
+              const allTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+              const descriptionMap = new Map();
+              allTransactions.forEach((t: any) => {
+                if (t.description && t.description.toLowerCase().includes(description.toLowerCase())) {
+                  descriptionMap.set(t.description, t.created_at || t.date);
+                }
+              });
+              const existingDescriptions = Array.from(descriptionMap.entries())
+                .sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime())
+                .map(([description]) => description)
+                .slice(0, 5);
+              
+              if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setSelectedDescriptionIndex(prev => prev < existingDescriptions.length - 1 ? prev + 1 : prev);
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setSelectedDescriptionIndex(prev => prev > 0 ? prev - 1 : -1);
+              } else if (e.key === 'Enter' && selectedDescriptionIndex >= 0) {
+                e.preventDefault();
+                setDescription(existingDescriptions[selectedDescriptionIndex]);
+                setShowDescriptionSuggestions(false);
+                setSelectedDescriptionIndex(-1);
+              } else if (e.key === 'Escape') {
+                setShowDescriptionSuggestions(false);
+                setSelectedDescriptionIndex(-1);
+              }
+            }}
+            className="w-full px-3 py-3 border border-gray-600 bg-gray-800 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm placeholder-gray-400 touch-manipulation"
+          />
+          {showDescriptionSuggestions && (() => {
+            const allTransactions = JSON.parse(localStorage.getItem('transactions') || '[]');
+            const descriptionMap = new Map();
+            allTransactions.forEach((t: any) => {
+              if (t.description && t.description.toLowerCase().includes(description.toLowerCase())) {
+                descriptionMap.set(t.description, t.created_at || t.date);
+              }
+            });
+            const existingDescriptions = Array.from(descriptionMap.entries())
+              .sort((a, b) => new Date(b[1]).getTime() - new Date(a[1]).getTime())
+              .map(([description]) => description)
+              .slice(0, 5);
+            
+            return existingDescriptions.length > 0 ? (
+              <div className="absolute top-full left-0 right-0 bg-gray-800 border border-gray-600 rounded-lg mt-1 max-h-40 overflow-y-auto z-10">
+                {existingDescriptions.map((desc: string, index: number) => (
+                  <button
+                    key={desc}
+                    type="button"
+                    onClick={() => {
+                      setDescription(desc);
+                      setShowDescriptionSuggestions(false);
+                      setSelectedDescriptionIndex(-1);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-gray-100 text-sm ${
+                      index === selectedDescriptionIndex ? 'bg-purple-600' : 'hover:bg-gray-700'
+                    }`}
+                  >
+                    {desc}
+                  </button>
+                ))}
+              </div>
+            ) : null;
+          })()}
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <input

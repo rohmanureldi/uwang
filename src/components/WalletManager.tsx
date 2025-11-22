@@ -6,7 +6,14 @@ import { formatIDR } from '../utils/currency';
 import CurrencyInput from './CurrencyInput';
 
 const WALLET_COLORS = [
-  '#8b5cf6', '#ec4899', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'
+  '#8b5cf6', '#ec4899', '#06b6d4', '#10b981', '#f59e0b', '#ef4444',
+  '#6366f1', '#d946ef', '#f97316', '#84cc16', '#22c55e', '#0ea5e9',
+  '#3b82f6', '#a855f7'
+];
+
+const WALLET_EMOJIS = [
+  '💰', '💳', '🏦', '💎', '🪙', '💵', '💴', '💶', '💷', '🎯',
+  '🏠', '🚗', '✈️', '🍔', '🛒', '💊', '📚', '🎮', '👕', '⚽'
 ];
 
 interface Props {
@@ -14,14 +21,15 @@ interface Props {
   onWalletChange?: () => void;
   selectedWallet?: string;
   onWalletSelect?: (walletId: string) => void;
-  onDeleteTransactions?: (walletId: string) => void;
+  deleteTransactionsByWallet?: (walletId: string) => void;
   transactions?: Transaction[];
 }
 
-export default function WalletManager({ onAddTransaction, onWalletChange, selectedWallet, onWalletSelect, onDeleteTransactions, transactions = [] }: Props) {
+export default function WalletManager({ onAddTransaction, onWalletChange, selectedWallet, onWalletSelect, deleteTransactionsByWallet, transactions = [] }: Props) {
   const [wallets, setWallets] = useState<Wallet[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [newWallet, setNewWallet] = useState({ name: '', initialBalance: '', color: WALLET_COLORS[0] });
+  const [newWallet, setNewWallet] = useState({ name: '', initialBalance: '', color: WALLET_COLORS[0], emoji: '' });
+  const [selectionMode, setSelectionMode] = useState<'color' | 'emoji'>('color');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -68,8 +76,8 @@ export default function WalletManager({ onAddTransaction, onWalletChange, select
     try {
       const wallet = await walletService.createWallet({
         name: newWallet.name.trim(),
-        color: newWallet.color,
-        icon: 'Wallet2'
+        color: selectionMode === 'color' ? newWallet.color : '#8b5cf6',
+        icon: selectionMode === 'emoji' ? newWallet.emoji : 'Wallet2'
       });
 
       if (balance !== 0) {
@@ -91,7 +99,8 @@ export default function WalletManager({ onAddTransaction, onWalletChange, select
       }
 
       setWallets([...wallets, { ...wallet, balance }]);
-      setNewWallet({ name: '', initialBalance: '', color: WALLET_COLORS[0] });
+      setNewWallet({ name: '', initialBalance: '', color: WALLET_COLORS[0], emoji: '' });
+      setSelectionMode('color');
       setShowForm(false);
       
       if (onWalletChange) {
@@ -102,15 +111,16 @@ export default function WalletManager({ onAddTransaction, onWalletChange, select
       const newWalletData: Wallet = {
         id: Date.now().toString(),
         name: newWallet.name.trim(),
-        color: newWallet.color,
-        icon: 'Wallet2',
+        color: selectionMode === 'color' ? newWallet.color : '#8b5cf6',
+        icon: selectionMode === 'emoji' ? newWallet.emoji : 'Wallet2',
         balance,
         created_at: new Date().toISOString()
       };
       const updated = [...wallets, newWalletData];
       setWallets(updated);
       localStorage.setItem('wallets', JSON.stringify(updated));
-      setNewWallet({ name: '', initialBalance: '', color: WALLET_COLORS[0] });
+      setNewWallet({ name: '', initialBalance: '', color: WALLET_COLORS[0], emoji: '' });
+      setSelectionMode('color');
       setShowForm(false);
     }
   };
@@ -119,13 +129,13 @@ export default function WalletManager({ onAddTransaction, onWalletChange, select
     if (!confirm('Are you sure you want to delete this wallet?')) return;
 
     try {
+      // Delete all transactions for this wallet first
+      if (deleteTransactionsByWallet) {
+        await deleteTransactionsByWallet(walletId);
+      }
+      
       await walletService.deleteWallet(walletId);
       setWallets(wallets.filter(w => w.id !== walletId));
-      
-      // Delete all transactions for this wallet
-      if (onDeleteTransactions) {
-        onDeleteTransactions(walletId);
-      }
       
       // If deleted wallet was selected, switch to global
       if (selectedWallet === walletId && onWalletSelect) {
@@ -137,14 +147,15 @@ export default function WalletManager({ onAddTransaction, onWalletChange, select
       }
     } catch (error) {
       console.error('Error deleting wallet:', error);
+      
+      // Delete all transactions for this wallet
+      if (deleteTransactionsByWallet) {
+        deleteTransactionsByWallet(walletId);
+      }
+      
       const updated = wallets.filter(w => w.id !== walletId);
       setWallets(updated);
       localStorage.setItem('wallets', JSON.stringify(updated));
-      
-      // Delete all transactions for this wallet
-      if (onDeleteTransactions) {
-        onDeleteTransactions(walletId);
-      }
       
       // If deleted wallet was selected, switch to global
       if (selectedWallet === walletId && onWalletSelect) {
@@ -198,21 +209,79 @@ export default function WalletManager({ onAddTransaction, onWalletChange, select
             </div>
           </div>
           
-          <div className="mt-4">
-            <label className="block text-sm text-gray-300 mb-2">Color</label>
-            <div className="flex gap-2">
-              {WALLET_COLORS.map((color) => (
+          <div className="mt-4 space-y-4">
+            <div>
+              <label className="block text-sm text-gray-300 mb-2">Icon Type</label>
+              <div className="flex gap-2 mb-4">
                 <button
-                  key={color}
                   type="button"
-                  onClick={() => setNewWallet({ ...newWallet, color })}
-                  className={`w-8 h-8 rounded-full border-2 ${
-                    newWallet.color === color ? 'border-white' : 'border-gray-600'
+                  onClick={() => {
+                    setSelectionMode('color');
+                    setNewWallet({ ...newWallet, emoji: '' });
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    selectionMode === 'color' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                   }`}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
+                >
+                  Color
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectionMode('emoji');
+                    setNewWallet({ ...newWallet, color: WALLET_COLORS[0] });
+                  }}
+                  className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                    selectionMode === 'emoji' 
+                      ? 'bg-purple-600 text-white' 
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  Emoji
+                </button>
+              </div>
             </div>
+            
+            {selectionMode === 'color' && (
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Choose Color</label>
+                <div className="flex flex-wrap gap-2">
+                  {WALLET_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      type="button"
+                      onClick={() => setNewWallet({ ...newWallet, color })}
+                      className={`w-8 h-8 rounded-full border-2 transition-all ${
+                        newWallet.color === color ? 'border-white scale-110' : 'border-gray-600 hover:border-gray-400'
+                      }`}
+                      style={{ backgroundColor: color }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {selectionMode === 'emoji' && (
+              <div>
+                <label className="block text-sm text-gray-300 mb-2">Choose Emoji</label>
+                <div className="flex flex-wrap gap-2">
+                  {WALLET_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setNewWallet({ ...newWallet, emoji })}
+                      className={`w-10 h-10 rounded-lg border-2 flex items-center justify-center text-lg transition-all ${
+                        newWallet.emoji === emoji ? 'border-white bg-gray-700 scale-110' : 'border-gray-600 hover:border-gray-400 bg-gray-800'
+                      }`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {error && (
@@ -231,7 +300,8 @@ export default function WalletManager({ onAddTransaction, onWalletChange, select
               onClick={() => {
                 setShowForm(false);
                 setError('');
-                setNewWallet({ name: '', initialBalance: '', color: WALLET_COLORS[0] });
+                setNewWallet({ name: '', initialBalance: '', color: WALLET_COLORS[0], emoji: '' });
+                setSelectionMode('color');
               }}
               className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
             >
@@ -249,10 +319,15 @@ export default function WalletManager({ onAddTransaction, onWalletChange, select
           return (
             <div key={wallet.id} className="flex items-center justify-between p-4 bg-gray-800 rounded-lg">
               <div className="flex items-center gap-3">
-                <div 
-                  className="w-4 h-4 rounded-full" 
-                  style={{ backgroundColor: wallet.color }}
-                />
+                <div className="flex items-center gap-2">
+                  <div 
+                    className="w-4 h-4 rounded-full" 
+                    style={{ backgroundColor: wallet.color }}
+                  />
+                  {wallet.icon && wallet.icon !== 'Wallet2' && (
+                    <span className="text-lg">{wallet.icon}</span>
+                  )}
+                </div>
                 <div>
                   <span className="text-gray-100 font-medium">{wallet.name}</span>
                   <div className="text-sm text-gray-400">
