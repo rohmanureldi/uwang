@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTransactions } from '../hooks/useTransactions';
+import { useWallets } from '../hooks/useWallets';
 import TransactionForm from '../components/TransactionForm';
 import TransactionList from '../components/TransactionList';
 import Balance from '../components/Balance';
@@ -12,8 +13,11 @@ import SpendingTrends from '../components/SpendingTrends';
 import FinancialHealth from '../components/FinancialHealth';
 import SpendingInsights from '../components/SpendingInsights';
 import CategoryCharts from '../components/CategoryCharts';
+import WalletBalance from '../components/WalletBalance';
+import WalletManager from '../components/WalletManager';
+import WalletSelector from '../components/WalletSelector';
 import { DashboardCard } from '../components/DashboardCustomizer';
-import { DollarSign, Settings, ArrowLeftRight, Edit, Plus, X, Lightbulb, BarChart3 } from 'lucide-react';
+import { DollarSign, Settings, ArrowLeftRight, Edit, Plus, X, Lightbulb, BarChart3, Wallet2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
@@ -22,8 +26,6 @@ interface Props {
 }
 
 export default function Dashboard({ dashboardCards, setDashboardCards }: Props) {
-  const { transactions, loading, addTransaction, editTransaction, deleteTransaction } = useTransactions();
-
   const [editMode, setEditMode] = useState(false);
   const [showCardModal, setShowCardModal] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{section: 'sidebar' | 'main', index: number} | null>(null);
@@ -31,9 +33,24 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
   const [firstSwapCard, setFirstSwapCard] = useState<DashboardCard | null>(null);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showWalletManager, setShowWalletManager] = useState(false);
+  const [selectedWallet, setSelectedWallet] = useState('');
+  const [showResetModal, setShowResetModal] = useState(false);
+
+  const { transactions, loading, addTransaction, editTransaction, deleteTransaction, deleteTransactionsByWallet, resetData } = useTransactions();
+  const { wallets, updateWalletBalance, refreshWallets } = useWallets(transactions);
+  
+  // Set default wallet when wallets load
+  useEffect(() => {
+    if (wallets.length > 0 && !selectedWallet) {
+      setSelectedWallet('global');
+    }
+  }, [wallets, selectedWallet]);
   const navigate = useNavigate();
 
-  const filteredTransactions = transactions;
+  const filteredTransactions = selectedWallet === 'global' || !selectedWallet 
+    ? transactions 
+    : transactions.filter(t => t.wallet_id === selectedWallet);
 
   const handleSlotClick = (section: 'sidebar' | 'main', index: number) => {
     setSelectedSlot({ section, index });
@@ -119,7 +136,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       case 'savings':
         return <SavingsGoals />;
       case 'form':
-        return <TransactionForm onAddTransaction={addTransaction} />;
+        return <TransactionForm onAddTransaction={addTransaction} selectedWallet={selectedWallet} />;
       case 'list':
         const isInSidebar = sidebarSlots.some(c => c?.id === 'list');
         return <TransactionList 
@@ -128,6 +145,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
           onDeleteTransaction={deleteTransaction}
           isInSidebar={isInSidebar}
         />;
+
         default:
           return null;
       }
@@ -214,9 +232,12 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
               Overview
             </div>
             <button
-              onClick={() => setShowSettingsModal(false)}
+              onClick={() => {
+                setShowSettingsModal(false);
+                setShowWalletManager(false);
+              }}
               className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                !showSettingsModal ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                !showSettingsModal && !showWalletManager ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
               }`}
             >
               <BarChart3 className="w-5 h-5" />
@@ -224,14 +245,39 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             </button>
             
             <AnimatePresence>
-              {!showSettingsModal && (
+              {!showSettingsModal && !showWalletManager && (
                 <motion.div
+                  layout
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.2, delay: 0.05 }}
+                  className="space-y-1"
                 >
-                  <button
+                  <AnimatePresence>
+                    {editMode && (
+                      <motion.button
+                        key="swap-cards"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={() => {
+                          setSwapMode(!swapMode);
+                          setFirstSwapCard(null);
+                        }}
+                        className={`text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 mr-2 ${
+                          swapMode ? 'bg-green-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                        }`}
+                      >
+                        <ArrowLeftRight className="w-4 h-4" />
+                        <span className="text-sm">{swapMode ? 'Exit Swap' : 'Swap Cards'}</span>
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                  <motion.button
+                    layoutId="edit-layout-button"
+                    transition={{ duration: 0.2 }}
                     onClick={async () => {
                       if (editMode) {
                         await setDashboardCards([...dashboardCards]);
@@ -240,46 +286,40 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                       }
                       setEditMode(!editMode);
                     }}
-                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 ${
+                    className={`text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 mr-2 ${
                       editMode ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
                     }`}
                   >
                     <Edit className="w-4 h-4" />
                     <span className="text-sm">{editMode ? 'Save Layout' : 'Edit Layout'}</span>
-                  </button>
+                  </motion.button>
                 </motion.div>
               )}
             </AnimatePresence>
             
-            <AnimatePresence>
-              {editMode && !showSettingsModal && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2, delay: 0.1 }}
-                >
-                  <button
-                    onClick={() => {
-                      setSwapMode(!swapMode);
-                      setFirstSwapCard(null);
-                    }}
-                    className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 ${
-                      swapMode ? 'bg-green-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                    }`}
-                  >
-                    <ArrowLeftRight className="w-4 h-4" />
-                    <span className="text-sm">{swapMode ? 'Exit Swap' : 'Swap Cards'}</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <button 
+              onClick={() => {
+                setShowWalletManager(true);
+                setShowSettingsModal(false);
+              }}
+              className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                showWalletManager ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+              }`}
+            >
+              <Wallet2 className="w-5 h-5" />
+              <span>Wallets</span>
+            </button>
+            
+
             
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
               Management
             </div>
             <button 
-              onClick={() => setShowSettingsModal(true)}
+              onClick={() => {
+                setShowSettingsModal(true);
+                setShowWalletManager(false);
+              }}
               className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
                 showSettingsModal ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
               }`}
@@ -292,20 +332,16 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
           {/* Balance Summary */}
           <div className="px-4 py-4 border-t border-gray-700">
             <div className="bg-gray-800 rounded-lg p-4">
-              <div className="text-xs text-gray-400 mb-1">Current Balance</div>
+              <div className="text-xs text-gray-400 mb-1">Total Balance</div>
               <div className={`text-lg font-bold ${
                 (() => {
-                  const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-                  const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-                  const balance = income - expense;
-                  return balance >= 0 ? 'text-green-400' : 'text-red-400';
+                  const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+                  return totalBalance >= 0 ? 'text-green-400' : 'text-red-400';
                 })()
               }`}>
                 {(() => {
-                  const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-                  const expense = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-                  const balance = income - expense;
-                  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(balance);
+                  const totalBalance = wallets.reduce((sum, wallet) => sum + wallet.balance, 0);
+                  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalBalance);
                 })()
                 }
               </div>
@@ -333,20 +369,62 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
               <p className="text-sm text-gray-400">Monitor your financial health and transactions</p>
             </div>
             
-            {/* Mobile Settings */}
-            <button 
-              onClick={() => setShowSettingsModal(true)}
-              className="lg:hidden bg-gray-800 rounded-lg p-2 border border-gray-700 hover:bg-gray-700 transition-colors"
-            >
-              <Settings className="w-5 h-5 text-gray-300" />
-            </button>
+            {/* Right Side - Wallet Picker and Settings */}
+            <div className="flex items-center gap-3">
+              {/* Desktop Wallet Picker */}
+              <div className="hidden lg:block">
+                <WalletSelector selectedWallet={selectedWallet} onWalletChange={setSelectedWallet} wallets={wallets} />
+              </div>
+              
+              {/* Mobile Settings */}
+              <button 
+                onClick={() => setShowSettingsModal(true)}
+                className="lg:hidden bg-gray-800 rounded-lg p-2 border border-gray-700 hover:bg-gray-700 transition-colors"
+              >
+                <Settings className="w-5 h-5 text-gray-300" />
+              </button>
+            </div>
           </div>
         </header>
         
         {/* Dashboard Content */}
         <main className="p-4 lg:p-8">
           <AnimatePresence mode="wait">
-            {showSettingsModal ? (
+            {showWalletManager ? (
+              <motion.div
+                key="wallets"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.2 }}
+                className="max-w-4xl mx-auto"
+              >
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2, delay: 0.05 }}
+                  className="mb-6"
+                >
+                  <h2 className="text-2xl font-bold text-white">Wallet Management</h2>
+                  <p className="text-gray-400">Create and manage your wallets</p>
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.2, delay: 0.1 }}
+                >
+                  <WalletManager 
+                    onAddTransaction={addTransaction}
+                    onWalletChange={refreshWallets}
+                    selectedWallet={selectedWallet}
+                    onWalletSelect={setSelectedWallet}
+                    onDeleteTransactions={deleteTransactionsByWallet}
+                    transactions={transactions}
+                  />
+                </motion.div>
+              </motion.div>
+            ) : showSettingsModal ? (
               <motion.div
                 key="settings"
                 initial={{ opacity: 0, y: 20 }}
@@ -373,13 +451,10 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 >
                   <h3 className="text-xl font-semibold text-white mb-4">Data Management</h3>
                   <p className="text-gray-400 mb-4">
-                    Reset all your transaction data. This action cannot be undone.
+                    Reset all your data. This action cannot be undone.
                   </p>
                   <button
-                    onClick={() => {
-                      setShowSettingsModal(false);
-                      navigate('/settings');
-                    }}
+                    onClick={() => setShowResetModal(true)}
                     className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
                   >
                     Reset Data
@@ -469,7 +544,8 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 onAddTransaction={(transaction) => {
                   addTransaction(transaction);
                   setShowTransactionModal(false);
-                }} 
+                }}
+                selectedWallet={selectedWallet}
               />
             </div>
           </div>
@@ -506,6 +582,48 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                   className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Reset Data Confirmation Modal */}
+        {showResetModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(10px)' }}>
+            <div className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-md w-full">
+              <div className="px-6 py-4 border-b border-gray-700">
+                <h3 className="text-lg font-semibold text-white">Reset All Data</h3>
+              </div>
+              
+              <div className="p-6">
+                <p className="text-gray-300 mb-4">This will permanently delete:</p>
+                <ul className="text-gray-400 text-sm space-y-2 mb-6">
+                  <li>• All transactions</li>
+                  <li>• All wallets</li>
+                  <li>• Custom categories</li>
+                  <li>• Dashboard settings</li>
+                </ul>
+                <p className="text-red-400 text-sm font-medium">This action cannot be undone!</p>
+              </div>
+              
+              <div className="px-6 py-4 border-t border-gray-700 flex gap-3">
+                <button
+                  onClick={() => setShowResetModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    await resetData();
+                    setShowResetModal(false);
+                    setShowSettingsModal(false);
+                    window.location.reload();
+                  }}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                >
+                  Reset All Data
                 </button>
               </div>
             </div>

@@ -8,17 +8,18 @@ export function useDashboardSettings() {
   const [useLocalStorage, setUseLocalStorage] = useState(false);
 
   const defaultCards: DashboardCard[] = [
-    { id: 'balance', name: 'Balance', icon: '💰', enabled: true },
-    { id: 'chart', name: 'Chart', icon: '📊', enabled: true },
-    { id: 'quickstats', name: 'Quick Stats', icon: '⚡', enabled: true },
+    { id: 'balance', name: 'Balance', icon: '💰', enabled: true, section: 'sidebar', sectionIndex: 0 },
+    { id: 'chart', name: 'Chart', icon: '📊', enabled: false },
+    { id: 'quickstats', name: 'Quick Stats', icon: '⚡', enabled: false },
     { id: 'categorycharts', name: 'Category Charts', icon: '📈', enabled: false },
     { id: 'health', name: 'Financial Health', icon: '🏥', enabled: false },
     { id: 'insights', name: 'Spending Insights', icon: '🔍', enabled: false },
     { id: 'trends', name: 'Spending Trends', icon: '📈', enabled: false },
     { id: 'budget', name: 'Budget Tracker', icon: '💰', enabled: false },
     { id: 'savings', name: 'Savings Goals', icon: '🎯', enabled: false },
-    { id: 'form', name: 'Tambah Transaksi', icon: '➕', enabled: true },
-    { id: 'list', name: 'Riwayat Transaksi', icon: '📝', enabled: true }
+    { id: 'form', name: 'Tambah Transaksi', icon: '➕', enabled: true, section: 'main', sectionIndex: 0 },
+    { id: 'list', name: 'Riwayat Transaksi', icon: '📝', enabled: true, section: 'main', sectionIndex: 1 },
+
   ];
 
   useEffect(() => {

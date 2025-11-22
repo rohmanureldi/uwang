@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, RotateCcw } from 'lucide-react';
+import Modal from '../components/Modal';
 
 interface Props {
   onResetData: () => void;
@@ -45,31 +46,27 @@ export default function Settings({ onResetData }: Props) {
           </div>
         </div>
 
-        {/* Reset Confirmation Modal */}
-        {showResetModal && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)', backdropFilter: 'blur(10px)' }}>
-            <div className="bg-gray-900 rounded-xl p-6 max-w-md w-full border border-gray-700">
-              <h3 className="text-lg font-semibold text-white mb-4">Confirm Reset</h3>
-              <p className="text-gray-300 mb-6">
-                Are you sure you want to delete all your transaction data? This action cannot be undone.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowResetModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleResetData}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Confirm
-                </button>
-              </div>
+        <Modal isOpen={showResetModal} onClose={() => setShowResetModal(false)} title="Confirm Reset">
+          <div className="p-6">
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to delete all your transaction data? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResetData}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Confirm
+              </button>
             </div>
           </div>
-        )}
+        </Modal>
       </div>
     </div>
   );

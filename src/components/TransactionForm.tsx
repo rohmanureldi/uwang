@@ -4,9 +4,10 @@ import CategoryModal from './CategoryModal';
 
 interface Props {
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  selectedWallet?: string;
 }
 
-export default function TransactionForm({ onAddTransaction }: Props) {
+export default function TransactionForm({ onAddTransaction, selectedWallet = '' }: Props) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -64,7 +65,8 @@ export default function TransactionForm({ onAddTransaction }: Props) {
         category: category.trim(),
         type,
         date,
-        time
+        time,
+        wallet_id: selectedWallet
       });
 
       // Reset form on successful submission
