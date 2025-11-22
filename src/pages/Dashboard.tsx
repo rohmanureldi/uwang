@@ -136,7 +136,19 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       case 'savings':
         return <SavingsGoals />;
       case 'form':
-        return <TransactionForm onAddTransaction={addTransaction} selectedWallet={selectedWallet} wallets={wallets} />;
+        return <TransactionForm 
+          onAddTransaction={addTransaction} 
+          selectedWallet={selectedWallet} 
+          wallets={wallets}
+          onCreateWallet={() => {
+            setShowWalletManager(true);
+            setShowSettingsModal(false);
+            setTimeout(() => {
+              const event = new CustomEvent('expandWalletForm');
+              window.dispatchEvent(event);
+            }, 100);
+          }}
+        />;
       case 'list':
         const isInSidebar = sidebarSlots.some(c => c?.id === 'list');
         return <TransactionList 
@@ -547,6 +559,15 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 }}
                 selectedWallet={selectedWallet}
                 wallets={wallets}
+                onCreateWallet={() => {
+                  setShowTransactionModal(false);
+                  setShowWalletManager(true);
+                  setShowSettingsModal(false);
+                  setTimeout(() => {
+                    const event = new CustomEvent('expandWalletForm');
+                    window.dispatchEvent(event);
+                  }, 100);
+                }}
               />
             </div>
           </div>

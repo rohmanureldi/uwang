@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Transaction, Wallet } from '../types';
 import CategoryModal from './CategoryModal';
-import { Wallet2 } from 'lucide-react';
+import { Wallet2, Plus } from 'lucide-react';
 
 interface Props {
   onAddTransaction: (transaction: Omit<Transaction, 'id'>) => void;
   selectedWallet?: string;
   wallets: Wallet[];
+  onCreateWallet?: () => void;
 }
 
-export default function TransactionForm({ onAddTransaction, selectedWallet = '', wallets }: Props) {
+export default function TransactionForm({ onAddTransaction, selectedWallet = '', wallets, onCreateWallet }: Props) {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('');
@@ -21,7 +22,29 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
   const [categoryError, setCategoryError] = useState('');
   const [walletError, setWalletError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formWallet, setFormWallet] = useState(selectedWallet === 'global' ? '' : selectedWallet);
+  const getDefaultWallet = () => {
+    const actualWallets = wallets.filter(w => w.id !== 'global');
+    
+    // If selectedWallet is not global, use it
+    if (selectedWallet && selectedWallet !== 'global') {
+      return selectedWallet;
+    }
+    
+    // If only one wallet exists, use it
+    if (actualWallets.length === 1) {
+      return actualWallets[0].id;
+    }
+    
+    return '';
+  };
+  
+  const [formWallet, setFormWallet] = useState(getDefaultWallet());
+  
+  // Update form wallet when selectedWallet or wallets change
+  useEffect(() => {
+    const newDefaultWallet = getDefaultWallet();
+    setFormWallet(newDefaultWallet);
+  }, [selectedWallet, wallets]);
 
   const formatNumber = (value: string) => {
     const num = value.replace(/\D/g, '');
@@ -84,7 +107,7 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
       setAmount('');
       setDescription('');
       setCategory('');
-      setFormWallet('');
+      setFormWallet(getDefaultWallet());
     } catch (error) {
       console.error('Error adding transaction:', error);
     } finally {
@@ -160,28 +183,41 @@ export default function TransactionForm({ onAddTransaction, selectedWallet = '',
         </div>
         
         <div>
-          <div className="flex items-center gap-2 px-3 py-3 border border-gray-600 bg-gray-800 rounded-lg">
-            <Wallet2 className="w-4 h-4 text-purple-400" />
-            <select
-              value={formWallet}
-              onChange={(e) => {
-                setFormWallet(e.target.value);
-                if (walletError) setWalletError('');
-              }}
-              className="bg-transparent text-gray-100 text-sm focus:outline-none flex-1"
+          {wallets.filter(w => w.id !== 'global').length === 0 ? (
+            <button
+              type="button"
+              onClick={onCreateWallet}
+              className="w-full flex items-center justify-center gap-2 px-3 py-3 border border-gray-600 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
             >
-              <option value="">Pilih Wallet</option>
-              {wallets.filter(w => w.id !== 'global').map((wallet) => (
-                <option key={wallet.id} value={wallet.id}>
-                  {wallet.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          {walletError && (
-            <div className="mt-1 text-red-400 text-sm animate-fadeIn">
-              {walletError}
-            </div>
+              <Plus className="w-4 h-4" />
+              Create Wallet First
+            </button>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 px-3 py-3 border border-gray-600 bg-gray-800 rounded-lg">
+                <Wallet2 className="w-4 h-4 text-purple-400" />
+                <select
+                  value={formWallet}
+                  onChange={(e) => {
+                    setFormWallet(e.target.value);
+                    if (walletError) setWalletError('');
+                  }}
+                  className="bg-transparent text-gray-100 text-sm focus:outline-none flex-1"
+                >
+                  <option value="">Pilih Wallet</option>
+                  {wallets.filter(w => w.id !== 'global').map((wallet) => (
+                    <option key={wallet.id} value={wallet.id}>
+                      {wallet.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {walletError && (
+                <div className="mt-1 text-red-400 text-sm animate-fadeIn">
+                  {walletError}
+                </div>
+              )}
+            </>
           )}
         </div>
 

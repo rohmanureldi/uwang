@@ -5,6 +5,7 @@ import { useCustomCategories } from './hooks/useCustomCategories';
 import { useDashboardSettings } from './hooks/useDashboardSettings';
 import Dashboard from './pages/Dashboard';
 import Settings from './pages/Settings';
+import SyncNotification from './components/SyncNotification';
 
 function App() {
   const { resetData } = useTransactions();
@@ -44,6 +45,7 @@ function App() {
 
   return (
     <>
+      <SyncNotification />
       <Routes>
         <Route 
           path="/" 

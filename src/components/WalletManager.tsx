@@ -26,6 +26,14 @@ export default function WalletManager({ onAddTransaction, onWalletChange, select
 
   useEffect(() => {
     loadWallets();
+    
+    // Listen for expand form event
+    const handleExpandForm = () => {
+      setShowForm(true);
+    };
+    
+    window.addEventListener('expandWalletForm', handleExpandForm);
+    return () => window.removeEventListener('expandWalletForm', handleExpandForm);
   }, []);
 
   const loadWallets = async () => {

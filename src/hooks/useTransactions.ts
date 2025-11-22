@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Transaction } from '../types';
+import { syncService } from '../services/syncService';
 
 export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amount: number, isIncome: boolean) => void) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -76,42 +77,40 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
       onWalletBalanceUpdate(transactionData.wallet_id, transactionData.amount, transactionData.type === 'income');
     }
 
-    if (useLocalStorage || !supabase) {
-      const newTransaction: Transaction = {
-        ...transactionData,
-        id: Date.now().toString()
-      };
-      const updated = [newTransaction, ...transactions];
-      setTransactions(updated);
-      localStorage.setItem('transactions', JSON.stringify(updated));
-      return;
-    }
+    const newTransaction: Transaction = {
+      ...transactionData,
+      id: Date.now().toString(),
+      created_at: new Date().toISOString()
+    };
 
-    try {
-      const { data, error } = await supabase
-        .from('transactions')
-        .insert([transactionData])
-        .select()
-        .single();
+    // Always save to localStorage first
+    const updated = [newTransaction, ...transactions];
+    setTransactions(updated);
+    localStorage.setItem('transactions', JSON.stringify(updated));
 
-      if (error) {
-        console.error('Supabase error:', error);
-        throw error;
+    // Try to sync to server if online
+    if (syncService.getStatus().isOnline && supabase && !useLocalStorage) {
+      try {
+        const { data, error } = await supabase
+          .from('transactions')
+          .insert([transactionData])
+          .select()
+          .single();
+
+        if (error) throw error;
+        
+        // Update with server ID
+        const serverUpdated = updated.map(t => t.id === newTransaction.id ? data : t);
+        setTransactions(serverUpdated);
+        localStorage.setItem('transactions', JSON.stringify(serverUpdated));
+      } catch (error) {
+        console.error('Failed to sync transaction, will sync later:', error);
+        // Add to pending sync queue
+        syncService.addPendingTransaction(newTransaction);
       }
-      
-      setTransactions(prev => [data, ...prev]);
-    } catch (error) {
-      console.error('Error adding transaction, falling back to localStorage:', error);
-      setUseLocalStorage(true);
-      
-      // Fallback to localStorage
-      const newTransaction: Transaction = {
-        ...transactionData,
-        id: Date.now().toString()
-      };
-      const updated = [newTransaction, ...transactions];
-      setTransactions(updated);
-      localStorage.setItem('transactions', JSON.stringify(updated));
+    } else {
+      // Add to pending sync queue for when online
+      syncService.addPendingTransaction(newTransaction);
     }
   };
 

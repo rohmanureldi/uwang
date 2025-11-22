@@ -60,27 +60,9 @@ export function useWallets(transactions: Transaction[] = []) {
   };
 
   const updateWalletBalance = async (walletId: string, amount: number, isIncome: boolean) => {
-    const balanceChange = isIncome ? amount : -amount;
-    
-    try {
-      const wallet = wallets.find(w => w.id === walletId);
-      if (!wallet) return;
-      
-      const newBalance = wallet.balance + balanceChange;
-      await walletService.updateWallet(walletId, { balance: newBalance });
-      
-      setWallets(prev => 
-        prev.map(w => w.id === walletId ? { ...w, balance: newBalance } : w)
-      );
-    } catch (error) {
-      console.error('Error updating wallet balance:', error);
-      // Fallback to localStorage
-      const updated = wallets.map(w => 
-        w.id === walletId ? { ...w, balance: w.balance + balanceChange } : w
-      );
-      setWallets(updated);
-      localStorage.setItem('wallets', JSON.stringify(updated));
-    }
+    // Database triggers now handle balance updates automatically
+    // Just refresh wallets to get updated balances
+    await loadWallets();
   };
 
   // Create Global wallet with total balance from all transactions
