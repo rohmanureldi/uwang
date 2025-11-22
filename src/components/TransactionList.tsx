@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
@@ -27,6 +27,15 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
   const [currentPage, setCurrentPage] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [debouncedSearchText, setDebouncedSearchText] = useState('');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(searchText);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [amountMin, setAmountMin] = useState('');
@@ -134,8 +143,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       if (filterCategory && t.category !== filterCategory) return false;
       
       // Text search
-      if (searchText && !t.description.toLowerCase().includes(searchText.toLowerCase()) && 
-          !t.category.toLowerCase().includes(searchText.toLowerCase())) return false;
+      if (debouncedSearchText && !t.description.toLowerCase().includes(debouncedSearchText.toLowerCase()) && 
+          !t.category.toLowerCase().includes(debouncedSearchText.toLowerCase())) return false;
       
       // Date range filter
       if (dateFrom && t.date < dateFrom) return false;
@@ -158,6 +167,10 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       const dateB = new Date(`${b.date} ${b.time || '00:00'}`);
       return sortOrder === 'desc' ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime();
     });
+
+  // Check if search has no results
+  const hasSearchResults = filteredAndSortedTransactions.length > 0;
+  const isSearching = debouncedSearchText.trim() !== '';
 
   // Group transactions by date and paginate by 2 days per page
   const { paginatedGroups, totalPages, uniqueDates } = useMemo(() => {
@@ -403,17 +416,24 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
         )}
       </AnimatePresence>
       <div className={`transition-opacity duration-150 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
-        {viewMode === 'list' ? (
+        {isSearching && !hasSearchResults ? (
+          <div className="text-center py-8">
+            <div className="text-gray-300 text-4xl mb-2 flex justify-center">
+              <Search className="w-12 h-12" />
+            </div>
+            <p className="text-gray-300 text-sm">No transactions found for "{debouncedSearchText}"</p>
+          </div>
+        ) : viewMode === 'list' ? (
           <div className="space-y-6">
             {Object.entries(paginatedGroups).map(([dateGroup, groupTransactions], index) => (
-            <div key={dateGroup} className="animate-fadeIn" style={{animationDelay: `${index * 0.1}s`}}>
+            <div key={dateGroup}>
               {index > 0 && <div className="border-t border-slate-600 mb-4"></div>}
               <h4 className={`font-semibold text-gray-100 mb-3 bg-slate-600 px-3 py-2 rounded-lg transition-all ${
                 isInSidebar ? 'text-sm' : 'text-base'
               }`}>{dateGroup}</h4>
               <div className="space-y-3">
                 {groupTransactions.map((transaction, txIndex) => (
-            <div key={transaction.id} className="border-b border-slate-600 last:border-b-0 pb-3 last:pb-0 animate-fadeIn transition-all hover:bg-opacity-30 rounded-lg px-2 py-1" style={{animationDelay: `${(index * 0.1) + (txIndex * 0.05)}s`}}>
+            <div key={transaction.id} className="border-b border-slate-600 last:border-b-0 pb-3 last:pb-0 transition-all hover:bg-opacity-30 rounded-lg px-2 py-1">
               {editingId === transaction.id ? (
                 <div className="space-y-3">
                   <div className="flex gap-4">
