@@ -59,8 +59,8 @@ export default function Balance({ transactions }: Props) {
             {topCategories.slice(0, 2).map(([category, amount]) => {
               const percentage = expenses > 0 ? (amount / expenses * 100) : 0;
               return (
-                <div key={category} className="space-y-1">
-                  <div className="flex justify-between items-center text-xs">
+                <div key={category} className="space-y-1 relative group">
+                  <div className="flex justify-between items-center text-xs cursor-pointer">
                     <div className="flex items-center gap-1">
                       {(() => {
                         const IconComponent = getCategoryIcon(category);
@@ -69,6 +69,11 @@ export default function Balance({ transactions }: Props) {
                       <span className="text-gray-300 truncate">{category}</span>
                     </div>
                     <span className="text-gray-300 text-xs">{percentage.toFixed(0)}%</span>
+                  </div>
+                  
+                  {/* Hover tooltip */}
+                  <div className="absolute left-0 bottom-full mb-2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10 whitespace-nowrap border border-gray-600">
+                    {formatIDR(amount)}
                   </div>
                   <div className="w-full bg-gray-700 rounded-full h-1.5">
                     <div 

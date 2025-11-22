@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
-import { DollarSign, List, Table, Edit, Trash2 } from 'lucide-react';
+import { DollarSign, List, Table, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import CategoryModal from './CategoryModal';
 
 interface Props {
@@ -20,6 +20,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [editForm, setEditForm] = useState({
     amount: '',
     description: '',
@@ -86,13 +88,31 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       return sortOrder === 'desc' ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime();
     });
 
-  const groupedTransactions = filteredAndSortedTransactions.reduce((groups, transaction) => {
-    const date = new Date(transaction.date);
-    const key = `${date.getDate()} ${date.toLocaleDateString('id-ID', { month: 'long' })}`;
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(transaction);
-    return groups;
-  }, {} as Record<string, typeof transactions>);
+  // Group transactions by date and paginate by 2 days per page
+  const { paginatedGroups, totalPages, uniqueDates } = useMemo(() => {
+    const grouped = filteredAndSortedTransactions.reduce((groups, transaction) => {
+      const date = new Date(transaction.date);
+      const key = `${date.getDate()} ${date.toLocaleDateString('id-ID', { month: 'long' })}`;
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(transaction);
+      return groups;
+    }, {} as Record<string, typeof transactions>);
+
+    const dates = Object.keys(grouped);
+    const totalPages = Math.ceil(dates.length / 2);
+    
+    // Get 2 days for current page
+    const startIndex = currentPage * 2;
+    const endIndex = startIndex + 2;
+    const currentDates = dates.slice(startIndex, endIndex);
+    
+    const paginatedGroups = currentDates.reduce((acc, date) => {
+      acc[date] = grouped[date];
+      return acc;
+    }, {} as Record<string, typeof transactions>);
+
+    return { paginatedGroups, totalPages, uniqueDates: dates };
+  }, [filteredAndSortedTransactions, currentPage]);
 
   const categories = [...new Set(transactions.map(t => t.category))];
   
@@ -144,6 +164,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
         )}
       </div>
       
+
+      
       <div className={`flex justify-between items-center gap-2 mb-4 ${isInSidebar ? 'text-xs' : 'text-sm'}`}>
         <div className="flex items-center gap-2">
           <span className="text-gray-300">Filter:</span>
@@ -181,8 +203,9 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       </div>
       
       {(isInSidebar || viewMode === 'list') ? (
-        <div className="space-y-6 max-h-96 lg:max-h-[500px] overflow-y-auto">
-          {Object.entries(groupedTransactions).map(([dateGroup, groupTransactions], index) => (
+        <div className={`transition-opacity duration-150 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
+          <div className="space-y-6">
+            {Object.entries(paginatedGroups).map(([dateGroup, groupTransactions], index) => (
             <div key={dateGroup} className="animate-fadeIn" style={{animationDelay: `${index * 0.1}s`}}>
               {index > 0 && <div className="border-t border-slate-600 mb-4"></div>}
               <h4 className={`font-semibold text-gray-100 mb-3 bg-slate-600 px-3 py-2 rounded-lg transition-all ${
@@ -328,10 +351,12 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
               </div>
             </div>
           ))}
+          </div>
         </div>
       ) : (
-        <div className="max-h-96 lg:max-h-[500px] overflow-auto">
-          <div className="min-w-full">
+        <div className={`transition-opacity duration-150 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
+          <div className="overflow-auto">
+            <div className="min-w-full">
             <div className="bg-slate-600 rounded-t-lg">
               <div className="grid grid-cols-5 gap-4 px-4 py-3 text-xs font-semibold text-gray-300 uppercase tracking-wider">
                 <div>Tanggal</div>
@@ -342,7 +367,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
               </div>
             </div>
             <div className="bg-slate-700 rounded-b-lg">
-              {filteredAndSortedTransactions.map((transaction, index) => (
+              {Object.values(paginatedGroups).flat().map((transaction, index) => (
                 <div key={transaction.id} className={`grid grid-cols-5 gap-4 px-4 py-3 text-sm border-b border-slate-600 last:border-b-0 hover:bg-slate-600 transition-colors animate-fadeIn items-center ${
                   editingId === transaction.id ? 'bg-slate-600' : ''
                 }`} style={{animationDelay: `${index * 0.05}s`}}>
@@ -471,7 +496,49 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                 </div>
               ))}
             </div>
+            </div>
           </div>
+        </div>
+      )}
+      
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-700">
+          <button
+            onClick={() => {
+              if (currentPage > 0) {
+                setIsAnimating(true);
+                setTimeout(() => {
+                  setCurrentPage(currentPage - 1);
+                  setIsAnimating(false);
+                }, 150);
+              }
+            }}
+            disabled={currentPage === 0 || isAnimating}
+            className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            Previous
+          </button>
+          
+          <span className="text-sm text-gray-400">
+            Page {currentPage + 1} of {totalPages}
+          </span>
+          
+          <button
+            onClick={() => {
+              if (currentPage < totalPages - 1) {
+                setIsAnimating(true);
+                setTimeout(() => {
+                  setCurrentPage(currentPage + 1);
+                  setIsAnimating(false);
+                }, 150);
+              }
+            }}
+            disabled={currentPage === totalPages - 1 || isAnimating}
+            className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            Next
+          </button>
         </div>
       )}
 
