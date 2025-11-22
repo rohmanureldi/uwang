@@ -10,15 +10,9 @@ interface Props {
 }
 
 export default function CategoryCharts({ transactions, isInSidebar = false }: Props) {
-  console.log('CategoryCharts component rendered with transactions:', transactions);
-  
   const { incomeByCategory, expenseByCategory } = useMemo(() => {
     const incomeTransactions = transactions.filter(t => t.type === 'income');
     const expenseTransactions = transactions.filter(t => t.type === 'expense');
-    
-    console.log('All transactions:', transactions.length);
-    console.log('Income transactions:', incomeTransactions.length, incomeTransactions);
-    console.log('Expense transactions:', expenseTransactions.length);
     
     const income = incomeTransactions.reduce((acc, t) => {
       acc[t.category] = (acc[t.category] || 0) + t.amount;
@@ -29,9 +23,6 @@ export default function CategoryCharts({ transactions, isInSidebar = false }: Pr
       acc[t.category] = (acc[t.category] || 0) + t.amount;
       return acc;
     }, {} as Record<string, number>);
-    
-    console.log('Income by category:', income);
-    console.log('Expense by category:', expense);
 
     return { incomeByCategory: income, expenseByCategory: expense };
   }, [transactions]);

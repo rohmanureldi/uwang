@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
-import { DollarSign, List, Table, Edit, Trash2, ChevronLeft, ChevronRight, Search, Upload } from 'lucide-react';
+import { DollarSign, Edit, Trash2, Search, Upload } from 'lucide-react';
 import CategoryModal from './CategoryModal';
 import CSVImportModal from './CSVImportModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -25,7 +25,6 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
   const [currentPage, setCurrentPage] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
 
@@ -38,8 +37,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
   }, [searchText]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [amountMin, setAmountMin] = useState('');
-  const [amountMax, setAmountMax] = useState('');
+
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [pageSize, setPageSize] = useState(2);
@@ -150,15 +148,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       if (dateFrom && t.date < dateFrom) return false;
       if (dateTo && t.date > dateTo) return false;
       
-      // Amount range filter - only apply if range is valid
-      const minValue = parseFloat(amountMin.replace(/\./g, '') || '0');
-      const maxValue = parseFloat(amountMax.replace(/\./g, '') || '0');
-      const isValidRange = !amountMin || !amountMax || minValue <= maxValue;
-      
-      if (isValidRange) {
-        if (amountMin && t.amount < minValue) return false;
-        if (amountMax && t.amount > maxValue) return false;
-      }
+
       
       return true;
     })
@@ -401,8 +391,6 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                     setSearchText('');
                     setDateFrom('');
                     setDateTo('');
-                    setAmountMin('');
-                    setAmountMax('');
                     setFilterCategory('');
                     setTypeFilter('all');
                   }}
@@ -415,7 +403,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
           </motion.div>
         )}
       </AnimatePresence>
-      <div className={`transition-opacity duration-150 ${isAnimating ? 'opacity-0' : 'opacity-100'}`}>
+      <div>
         {isSearching && !hasSearchResults ? (
           <div className="text-center py-8">
             <div className="text-gray-300 text-4xl mb-2 flex justify-center">
@@ -642,16 +630,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       {totalPages > 1 && (
         <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-700">
           <button
-            onClick={() => {
-              if (currentPage > 0) {
-                setIsAnimating(true);
-                setTimeout(() => {
-                  setCurrentPage(currentPage - 1);
-                  setIsAnimating(false);
-                }, 150);
-              }
-            }}
-            disabled={currentPage === 0 || isAnimating}
+            onClick={() => setCurrentPage(currentPage - 1)}
+            disabled={currentPage === 0}
             className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             Previous
@@ -662,16 +642,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
           </span>
           
           <button
-            onClick={() => {
-              if (currentPage < totalPages - 1) {
-                setIsAnimating(true);
-                setTimeout(() => {
-                  setCurrentPage(currentPage + 1);
-                  setIsAnimating(false);
-                }, 150);
-              }
-            }}
-            disabled={currentPage === totalPages - 1 || isAnimating}
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={currentPage === totalPages - 1}
             className="px-3 py-1 bg-gray-700 text-white rounded hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             Next
