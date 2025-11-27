@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Transaction } from '../types';
 import { syncService } from '../services/syncService';
+import { STORAGE_KEYS } from '../utils/constants';
 
 export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amount: number, isIncome: boolean) => void) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -14,7 +15,7 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
 
   useEffect(() => {
     if (useLocalStorage) {
-      localStorage.setItem('transactions', JSON.stringify(transactions));
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(transactions));
     }
   }, [transactions, useLocalStorage]);
 
@@ -53,7 +54,7 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
       setUseLocalStorage(true);
       
       // Fallback to localStorage
-      const saved = localStorage.getItem('transactions');
+      const saved = localStorage.getItem(STORAGE_KEYS.TRANSACTIONS);
       if (saved) {
         try {
           const parsedTransactions = JSON.parse(saved);
@@ -79,14 +80,13 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
 
     const newTransaction: Transaction = {
       ...transactionData,
-      id: Date.now().toString(),
-      created_at: new Date().toISOString()
+      id: Date.now().toString()
     };
 
     // Always save to localStorage first
     const updated = [newTransaction, ...transactions];
     setTransactions(updated);
-    localStorage.setItem('transactions', JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
 
     // Try to sync to server if online
     if (syncService.getStatus().isOnline && supabase && !useLocalStorage) {
@@ -102,7 +102,7 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
         // Update with server ID
         const serverUpdated = updated.map(t => t.id === newTransaction.id ? data : t);
         setTransactions(serverUpdated);
-        localStorage.setItem('transactions', JSON.stringify(serverUpdated));
+        localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(serverUpdated));
       } catch (error) {
         console.error('Failed to sync transaction, will sync later:', error);
         // Add to pending sync queue
@@ -118,7 +118,7 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
     if (useLocalStorage || !supabase) {
       const updated = transactions.map(t => t.id === id ? { ...transactionData, id } : t);
       setTransactions(updated);
-      localStorage.setItem('transactions', JSON.stringify(updated));
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
       return;
     }
 
@@ -141,7 +141,7 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
     if (useLocalStorage || !supabase) {
       const updated = transactions.filter(t => t.id !== id);
       setTransactions(updated);
-      localStorage.setItem('transactions', JSON.stringify(updated));
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
       return;
     }
 
@@ -161,10 +161,10 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
   const resetData = async () => {
     if (useLocalStorage || !supabase) {
       setTransactions([]);
-      localStorage.removeItem('transactions');
-      localStorage.removeItem('wallets');
-      localStorage.removeItem('customCategories');
-      localStorage.removeItem('dashboardCards');
+      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+      localStorage.removeItem(STORAGE_KEYS.WALLETS);
+      localStorage.removeItem(STORAGE_KEYS.CUSTOM_CATEGORIES);
+      localStorage.removeItem(STORAGE_KEYS.DASHBOARD_CARDS);
       return;
     }
 
@@ -206,23 +206,22 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
       console.error('Error resetting data:', error);
       // Fallback to localStorage reset
       setTransactions([]);
-      localStorage.removeItem('transactions');
-      localStorage.removeItem('wallets');
-      localStorage.removeItem('customCategories');
-      localStorage.removeItem('dashboardCards');
+      localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+      localStorage.removeItem(STORAGE_KEYS.WALLETS);
+      localStorage.removeItem(STORAGE_KEYS.CUSTOM_CATEGORIES);
+      localStorage.removeItem(STORAGE_KEYS.DASHBOARD_CARDS);
     }
   };
 
   const importTransactions = async (importedTransactions: Omit<Transaction, 'id'>[]) => {
     const newTransactions = importedTransactions.map(t => ({
       ...t,
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-      created_at: new Date().toISOString()
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 9)
     }));
 
     const updated = [...newTransactions, ...transactions];
     setTransactions(updated);
-    localStorage.setItem('transactions', JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
 
     if (syncService.getStatus().isOnline && supabase && !useLocalStorage) {
       try {
@@ -244,7 +243,7 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
     if (useLocalStorage || !supabase) {
       const updated = transactions.filter(t => t.wallet_id !== walletId && t.wallet_id !== null && t.wallet_id !== undefined);
       setTransactions(updated);
-      localStorage.setItem('transactions', JSON.stringify(updated));
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
       return;
     }
 
@@ -260,7 +259,7 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
       console.error('Error deleting wallet transactions:', error);
       const updated = transactions.filter(t => t.wallet_id !== walletId);
       setTransactions(updated);
-      localStorage.setItem('transactions', JSON.stringify(updated));
+      localStorage.setItem(STORAGE_KEYS.TRANSACTIONS, JSON.stringify(updated));
     }
   };
 

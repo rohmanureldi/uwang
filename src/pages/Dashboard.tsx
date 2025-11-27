@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { useTransactions } from '../hooks/useTransactions';
 import { useWallets } from '../hooks/useWallets';
 import TransactionForm from '../components/TransactionForm';
@@ -19,6 +19,7 @@ import WalletSelector from '../components/WalletSelector';
 import { DashboardCard } from '../components/DashboardCustomizer';
 import { DollarSign, Settings, Plus, X, BarChart3, Wallet2, Menu, TrendingUp, Target, Eye, PlusCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { calculateTotalBalance, formatBalance, getBalanceColor } from '../utils/balance';
 
 interface Props {
   dashboardCards: DashboardCard[];
@@ -43,7 +44,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       setSelectedWallet('global');
     }
   }, [wallets, selectedWallet]);
-  const navigate = useNavigate();
+
 
   const filteredTransactions = selectedWallet === 'global' || !selectedWallet 
     ? transactions 
@@ -358,25 +359,8 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
           <div className="px-4 py-4 border-t border-gray-700">
             <div className="bg-gray-800 rounded-lg p-4">
               <div className="text-xs text-gray-400 mb-1">Total Balance</div>
-              <div className={`text-lg font-bold ${
-                (() => {
-                  const totalBalance = transactions.reduce((total, transaction) => {
-                    return transaction.type === 'income' 
-                      ? total + transaction.amount 
-                      : total - transaction.amount;
-                  }, 0);
-                  return totalBalance >= 0 ? 'text-green-400' : 'text-red-400';
-                })()
-              }`}>
-                {(() => {
-                  const totalBalance = transactions.reduce((total, transaction) => {
-                    return transaction.type === 'income' 
-                      ? total + transaction.amount 
-                      : total - transaction.amount;
-                  }, 0);
-                  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalBalance);
-                })()
-                }
+              <div className={`text-lg font-bold ${getBalanceColor(calculateTotalBalance(transactions))}`}>
+                {formatBalance(calculateTotalBalance(transactions))}
               </div>
             </div>
           </div>
@@ -496,8 +480,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 wallets={wallets}
                 onCreateWallet={() => {
                   setShowTransactionModal(false);
-                  setShowWalletManager(true);
-                  setShowSettingsModal(false);
+                  setCurrentView('wallets');
                   setTimeout(() => {
                     const event = new CustomEvent('expandWalletForm');
                     window.dispatchEvent(event);
@@ -552,25 +535,8 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
               <div className="absolute bottom-0 left-0 right-0 px-4 py-4 border-t border-gray-700 bg-gray-900">
                 <div className="bg-gray-800 rounded-lg p-3">
                   <div className="text-xs text-gray-400 mb-1">Total Balance</div>
-                  <div className={`text-sm font-bold break-words overflow-hidden ${
-                    (() => {
-                      const totalBalance = transactions.reduce((total, transaction) => {
-                        return transaction.type === 'income' 
-                          ? total + transaction.amount 
-                          : total - transaction.amount;
-                      }, 0);
-                      return totalBalance >= 0 ? 'text-green-400' : 'text-red-400';
-                    })()
-                  }`}>
-                    {(() => {
-                      const totalBalance = transactions.reduce((total, transaction) => {
-                        return transaction.type === 'income' 
-                          ? total + transaction.amount 
-                          : total - transaction.amount;
-                      }, 0);
-                      return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(totalBalance);
-                    })()
-                    }
+                  <div className={`text-sm font-bold break-words overflow-hidden ${getBalanceColor(calculateTotalBalance(transactions))}`}>
+                    {formatBalance(calculateTotalBalance(transactions))}
                   </div>
                 </div>
               </div>

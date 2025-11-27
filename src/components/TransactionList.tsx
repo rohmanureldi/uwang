@@ -3,9 +3,10 @@ import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
 import { DollarSign, Edit, Trash2, Search, Upload, TrendingUp, TrendingDown } from 'lucide-react';
-import CategoryModal from './CategoryModal';
+
 import CSVImportModal from './CSVImportModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { DEFAULT_PAGE_SIZE, MAX_SUGGESTIONS, SUGGESTION_TIMEOUT, DEFAULT_TRANSACTION_TYPE, MOBILE_BREAKPOINT } from '../utils/constants';
 
 interface Props {
   transactions: Transaction[];
@@ -21,9 +22,7 @@ interface Props {
 export default function TransactionList({ transactions, onEditTransaction, onDeleteTransaction, onAddTransaction, onImportTransactions, wallets = [], isInSidebar = false, selectedWallet }: Props) {
   const [editingCell, setEditingCell] = useState<{id: string, field: string} | null>(null);
   const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
-  const [selectedCategoryIndex, setSelectedCategoryIndex] = useState(-1);
   const [isAddingNew, setIsAddingNew] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
   const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
   const [newTransaction, setNewTransaction] = useState({
@@ -31,23 +30,19 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
     description: '',
     category: '',
     subcategory: '',
-    type: 'expense' as 'income' | 'expense',
+    type: DEFAULT_TRANSACTION_TYPE,
     date: new Date().toISOString().split('T')[0],
     time: new Date().toTimeString().slice(0, 5),
     wallet_id: ''
   });
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSubcategorySuggestions, setShowSubcategorySuggestions] = useState(false);
-  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
-  const [showDescriptionSuggestions, setShowDescriptionSuggestions] = useState(false);
-  const [selectedDescriptionIndex, setSelectedDescriptionIndex] = useState(-1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterCategory, setFilterCategory] = useState<string>('');
   const [viewMode] = useState<'list' | 'table'>(() => {
-    return window.innerWidth < 768 ? 'list' : 'table';
+    return window.innerWidth < MOBILE_BREAKPOINT ? 'list' : 'table';
   });
   const [currentPage, setCurrentPage] = useState(0);
   const [searchText, setSearchText] = useState('');
@@ -65,14 +60,14 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
 
   const [typeFilter, setTypeFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [pageSize, setPageSize] = useState(2);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [showImportModal, setShowImportModal] = useState(false);
   const [editForm, setEditForm] = useState({
     amount: '',
     description: '',
     category: '',
     subcategory: '',
-    type: 'expense' as 'income' | 'expense',
+    type: DEFAULT_TRANSACTION_TYPE,
     date: '',
     time: ''
   });
@@ -140,7 +135,8 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
           subcategory: field === 'subcategory' ? (editForm.subcategory || undefined) : transaction.subcategory,
           type: field === 'type' ? editForm.type : transaction.type,
           date: (field === 'date' || field === 'datetime') ? editForm.date : transaction.date,
-          time: (field === 'time' || field === 'datetime') ? editForm.time : (transaction.time || '')
+          time: (field === 'time' || field === 'datetime') ? editForm.time : (transaction.time || ''),
+          wallet_id: transaction.wallet_id
         };
         
         onEditTransaction(id, updatedData);
@@ -888,7 +884,6 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                               value={newTransaction.category}
                               onChange={(e) => {
                                 setNewTransaction({ ...newTransaction, category: e.target.value });
-                                setSelectedCategoryIndex(-1);
                               } }
                               onFocus={() => setShowCategorySuggestions(true)}
                               onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 200)}
@@ -897,7 +892,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                             {showCategorySuggestions && (() => {
                               const existingCategories = [...new Set(transactions.map(t => t.category))]
                                 .filter(cat => cat.toLowerCase().includes(newTransaction.category.toLowerCase()))
-                                .slice(0, 5);
+                                .slice(0, MAX_SUGGESTIONS);
 
                               return existingCategories.length > 0 ? (
                                 <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded mt-1 max-h-32 overflow-y-auto z-20">
@@ -924,16 +919,15 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                               value={newTransaction.subcategory}
                               onChange={(e) => {
                                 setNewTransaction({ ...newTransaction, subcategory: e.target.value });
-                                setSelectedSuggestionIndex(-1);
                               } }
                               onFocus={() => setShowSubcategorySuggestions(true)}
-                              onBlur={() => setTimeout(() => setShowSubcategorySuggestions(false), 200)}
+                              onBlur={() => setTimeout(() => setShowSubcategorySuggestions(false), SUGGESTION_TIMEOUT)}
                               className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
                               placeholder="Subcategory" />
                             {showSubcategorySuggestions && (() => {
                               const existingSubcategories = [...new Set(transactions.map(t => t.subcategory).filter(Boolean))]
                                 .filter(sub => sub!.toLowerCase().includes(newTransaction.subcategory.toLowerCase()))
-                                .slice(0, 5);
+                                .slice(0, MAX_SUGGESTIONS);
 
                               return existingSubcategories.length > 0 ? (
                                 <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded mt-1 max-h-32 overflow-y-auto z-20">
@@ -1089,6 +1083,11 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                               setEditForm({...editForm, date, time});
                             }}
                             onBlur={() => saveCellEdit(transaction.id, 'datetime')}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                saveCellEdit(transaction.id, 'datetime');
+                              }
+                            }}
                             className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
                             autoFocus
                           />
@@ -1113,6 +1112,11 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                             value={editForm.description}
                             onChange={(e) => setEditForm({...editForm, description: e.target.value})}
                             onBlur={() => saveCellEdit(transaction.id, 'description')}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                saveCellEdit(transaction.id, 'description');
+                              }
+                            }}
                             className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
                             autoFocus
                           />
@@ -1138,14 +1142,19 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                               value={editForm.category}
                               onChange={(e) => {
                                 setEditForm({...editForm, category: e.target.value});
-                                setSelectedCategoryIndex(-1);
                               }}
                               onFocus={() => setShowCategorySuggestions(true)}
                               onBlur={() => {
                                 setTimeout(() => {
                                   setShowCategorySuggestions(false);
                                   saveCellEdit(transaction.id, 'category');
-                                }, 200);
+                                }, SUGGESTION_TIMEOUT);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  setShowCategorySuggestions(false);
+                                  saveCellEdit(transaction.id, 'category');
+                                }
                               }}
                               className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
                               autoFocus
@@ -1153,7 +1162,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                             {showCategorySuggestions && (() => {
                               const existingCategories = [...new Set(transactions.map(t => t.category))]
                                 .filter(cat => cat.toLowerCase().includes(editForm.category.toLowerCase()))
-                                .slice(0, 5);
+                                .slice(0, MAX_SUGGESTIONS);
                               
                               return existingCategories.length > 0 ? (
                                 <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded mt-1 max-h-32 overflow-y-auto z-20">
@@ -1201,14 +1210,19 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                               value={editForm.subcategory}
                               onChange={(e) => {
                                 setEditForm({...editForm, subcategory: e.target.value});
-                                setSelectedSuggestionIndex(-1);
                               }}
                               onFocus={() => setShowSubcategorySuggestions(true)}
                               onBlur={() => {
                                 setTimeout(() => {
                                   setShowSubcategorySuggestions(false);
                                   saveCellEdit(transaction.id, 'subcategory');
-                                }, 200);
+                                }, SUGGESTION_TIMEOUT);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  setShowSubcategorySuggestions(false);
+                                  saveCellEdit(transaction.id, 'subcategory');
+                                }
                               }}
                               className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
                               autoFocus
@@ -1216,7 +1230,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                             {showSubcategorySuggestions && (() => {
                               const existingSubcategories = [...new Set(transactions.map(t => t.subcategory).filter(Boolean))]
                                 .filter(sub => sub!.toLowerCase().includes(editForm.subcategory.toLowerCase()))
-                                .slice(0, 5);
+                                .slice(0, MAX_SUGGESTIONS);
                               
                               return existingSubcategories.length > 0 ? (
                                 <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded mt-1 max-h-32 overflow-y-auto z-20">
@@ -1272,6 +1286,11 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                             value={editForm.amount}
                             onChange={(e) => handleEditAmountChange(e.target.value)}
                             onBlur={() => saveCellEdit(transaction.id, 'amount')}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                saveCellEdit(transaction.id, 'amount');
+                              }
+                            }}
                             className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm text-right"
                             autoFocus
                           />
@@ -1325,12 +1344,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
         </div>
       )}
 
-      <CategoryModal
-        isOpen={showCategoryModal}
-        onClose={() => setShowCategoryModal(false)}
-        onSelect={(category) => setEditForm({...editForm, category})}
-        type={editForm.type}
-      />
+
 
       {deleteConfirmId && (
         <div 
