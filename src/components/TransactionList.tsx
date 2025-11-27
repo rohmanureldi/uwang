@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Transaction } from '../types';
 import { formatIDR } from '../utils/currency';
 import { getCategoryIcon } from '../utils/categoryIcons';
-import { DollarSign, Edit, Trash2, Search, Upload } from 'lucide-react';
+import { DollarSign, Edit, Trash2, Search, Upload, TrendingUp, TrendingDown } from 'lucide-react';
 import CategoryModal from './CategoryModal';
 import CSVImportModal from './CSVImportModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -11,24 +11,44 @@ interface Props {
   transactions: Transaction[];
   onEditTransaction: (id: string, transaction: Omit<Transaction, 'id'>) => void;
   onDeleteTransaction: (id: string) => void;
+  onAddTransaction?: (transaction: Omit<Transaction, 'id'>) => void;
   onImportTransactions?: (transactions: Omit<Transaction, 'id'>[], walletId: string) => void;
   wallets?: Array<{ id: string; name: string; color?: string; icon?: string; }>;
   isInSidebar?: boolean;
   selectedWallet?: string;
 }
 
-export default function TransactionList({ transactions, onEditTransaction, onDeleteTransaction, onImportTransactions, wallets = [], isInSidebar = false, selectedWallet }: Props) {
-  const [editingId, setEditingId] = useState<string | null>(null);
+export default function TransactionList({ transactions, onEditTransaction, onDeleteTransaction, onAddTransaction, onImportTransactions, wallets = [], isInSidebar = false, selectedWallet }: Props) {
+  const [editingCell, setEditingCell] = useState<{id: string, field: string} | null>(null);
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
+  const [selectedCategoryIndex, setSelectedCategoryIndex] = useState(-1);
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteMode, setDeleteMode] = useState(false);
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
+  const [newTransaction, setNewTransaction] = useState({
+    amount: '',
+    description: '',
+    category: '',
+    subcategory: '',
+    type: 'expense' as 'income' | 'expense',
+    date: new Date().toISOString().split('T')[0],
+    time: new Date().toTimeString().slice(0, 5),
+    wallet_id: ''
+  });
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSubcategorySuggestions, setShowSubcategorySuggestions] = useState(false);
   const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [showDescriptionSuggestions, setShowDescriptionSuggestions] = useState(false);
   const [selectedDescriptionIndex, setSelectedDescriptionIndex] = useState(-1);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterCategory, setFilterCategory] = useState<string>('');
-  const [viewMode, setViewMode] = useState<'list' | 'table'>('list');
+  const [viewMode] = useState<'list' | 'table'>(() => {
+    return window.innerWidth < 768 ? 'list' : 'table';
+  });
   const [currentPage, setCurrentPage] = useState(0);
   const [searchText, setSearchText] = useState('');
   const [debouncedSearchText, setDebouncedSearchText] = useState('');
@@ -57,45 +77,110 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
     time: ''
   });
 
-  const startEdit = (transaction: Transaction) => {
-    setEditingId(transaction.id);
-    setEditForm({
-      amount: transaction.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'),
-      description: transaction.description,
-      category: transaction.category,
-      subcategory: transaction.subcategory || '',
-      type: transaction.type,
-      date: transaction.date,
-      time: transaction.time || ''
-    });
+  const startCellEdit = (id: string, field: string) => {
+    setEditingCell({id, field});
+    if (id !== 'new') {
+      const transaction = transactions.find(t => t.id === id);
+      if (transaction) {
+        setEditForm({
+          amount: transaction.amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'),
+          description: transaction.description,
+          category: transaction.category,
+          subcategory: transaction.subcategory || '',
+          type: transaction.type,
+          date: transaction.date,
+          time: transaction.time || ''
+        });
+      }
+    }
   };
 
-  const saveEdit = (id: string) => {
-    if (!editForm.amount || !editForm.category) {
-      if (!editForm.amount) {
-        setErrorMessage('Masukkan jumlah terlebih dahulu');
-      } else if (!editForm.category) {
-        setErrorMessage('Pilih kategori terlebih dahulu');
+  const saveCellEdit = (id: string, field: string) => {
+    if (id === 'new') {
+      // Save new transaction
+      if (!newTransaction.amount || !newTransaction.category || !newTransaction.description) {
+        setErrorMessage('Please fill in amount, description, and category');
+        setTimeout(() => setErrorMessage(''), 3000);
+        return;
       }
+      
+      const transactionData = {
+        amount: parseFloat(newTransaction.amount.replace(/\./g, '')),
+        description: newTransaction.description,
+        category: newTransaction.category,
+        subcategory: newTransaction.subcategory || undefined,
+        type: newTransaction.type,
+        date: newTransaction.date,
+        time: newTransaction.time,
+        wallet_id: selectedWallet === 'global' ? (newTransaction.wallet_id || undefined) : selectedWallet
+      };
+      
+      if (onAddTransaction) {
+        onAddTransaction(transactionData);
+        setNewTransaction({
+          amount: '',
+          description: '',
+          category: '',
+          subcategory: '',
+          type: 'expense',
+          date: new Date().toISOString().split('T')[0],
+          time: new Date().toTimeString().slice(0, 5),
+          wallet_id: ''
+        });
+        setIsAddingNew(false);
+      }
+    } else {
+      // Save existing transaction edit
+      const transaction = transactions.find(t => t.id === id);
+      if (transaction) {
+        const updatedData = {
+          amount: field === 'amount' ? parseFloat(editForm.amount.replace(/\./g, '')) : transaction.amount,
+          description: field === 'description' ? editForm.description : transaction.description,
+          category: field === 'category' ? editForm.category : transaction.category,
+          subcategory: field === 'subcategory' ? (editForm.subcategory || undefined) : transaction.subcategory,
+          type: field === 'type' ? editForm.type : transaction.type,
+          date: (field === 'date' || field === 'datetime') ? editForm.date : transaction.date,
+          time: (field === 'time' || field === 'datetime') ? editForm.time : (transaction.time || '')
+        };
+        
+        onEditTransaction(id, updatedData);
+      }
+    }
+    setEditingCell(null);
+  };
+
+  const addNewTransaction = () => {
+    if (!newTransaction.amount || !newTransaction.category || !newTransaction.description) {
+      setErrorMessage('Please fill in amount, description, and category');
       setTimeout(() => setErrorMessage(''), 3000);
       return;
     }
-    setErrorMessage('');
-
-    onEditTransaction(id, {
-      amount: parseFloat(editForm.amount.replace(/\./g, '')),
-      description: editForm.description,
-      category: editForm.category,
-      subcategory: editForm.subcategory || undefined,
-      type: editForm.type,
-      date: editForm.date,
-      time: editForm.time
-    });
-    setEditingId(null);
-  };
-
-  const cancelEdit = () => {
-    setEditingId(null);
+    
+    const transactionData = {
+      amount: parseFloat(newTransaction.amount.replace(/\./g, '')),
+      description: newTransaction.description,
+      category: newTransaction.category,
+      subcategory: newTransaction.subcategory || undefined,
+      type: newTransaction.type,
+      date: newTransaction.date,
+      time: newTransaction.time,
+      wallet_id: selectedWallet === 'global' ? (newTransaction.wallet_id || undefined) : selectedWallet
+    };
+    
+    if (onAddTransaction) {
+      onAddTransaction(transactionData);
+      setNewTransaction({
+        amount: '',
+        description: '',
+        category: '',
+        subcategory: '',
+        type: 'expense',
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toTimeString().slice(0, 5),
+        wallet_id: ''
+      });
+      setIsAddingNew(false);
+    }
   };
 
   const formatNumber = (value: string) => {
@@ -246,30 +331,6 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-semibold text-gray-100 text-lg">Transactions</h3>
         <div className="flex items-center gap-3">
-          {!isInSidebar && (
-            <div className="bg-gray-800 rounded-lg p-1 border border-gray-600 flex">
-              <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1 rounded text-xs transition-all ${
-                  viewMode === 'list' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                List
-              </button>
-              <button
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1 rounded text-xs transition-all ${
-                  viewMode === 'table' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                }`}
-              >
-                Table
-              </button>
-            </div>
-          )}
           <button
             onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
             className="px-3 py-2 bg-gray-800 border border-gray-600 text-gray-300 hover:bg-gray-700 rounded-lg text-sm transition-colors"
@@ -280,15 +341,63 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       </div>
       
       <div className="flex justify-between items-center gap-2 mb-4">
-        <div className="w-1/2 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search transactions..."
-            value={searchText}
-            onChange={(e) => setSearchText(e.target.value)}
-            className="w-full pl-10 pr-3 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm placeholder-gray-400"
-          />
+        <div className="flex items-center gap-3 flex-1">
+          <div className="w-1/2 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search transactions..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="w-full pl-10 pr-3 py-2 bg-gray-700 border border-gray-600 text-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none text-sm placeholder-gray-400"
+            />
+          </div>
+          
+          <div className="flex items-center bg-gray-800 border border-gray-600 rounded-lg overflow-hidden">
+            <AnimatePresence mode="wait">
+              {!deleteMode ? (
+              <motion.button
+                key="delete-icon"
+                initial={{ opacity: 1 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                onClick={() => setDeleteMode(true)}
+                className="px-3 py-2 bg-red-600 text-white hover:bg-red-700 text-sm transition-colors rounded-lg"
+                whileTap={{ scale: 0.95 }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </motion.button>
+            ) : (
+              <>
+                <motion.button
+                  key="delete-text"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={() => setShowBulkDeleteConfirm(true)}
+                  disabled={selectedTransactions.size === 0}
+                  className="px-3 py-2 bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm transition-colors"
+                >
+                  Delete ({selectedTransactions.size})
+                </motion.button>
+                <motion.button
+                  key="cancel-button"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2, delay: 0.1 }}
+                  onClick={() => {
+                    setDeleteMode(false);
+                    setSelectedTransactions(new Set());
+                  }}
+                  className="px-3 py-2 text-gray-300 hover:bg-gray-700 text-sm transition-colors border-l border-gray-600"
+                >
+                  Cancel
+                </motion.button>
+              </>
+            )}
+            </AnimatePresence>
+          </div>
         </div>
         {!isInSidebar && (
           <div className="flex items-center gap-2 text-sm">
@@ -430,7 +539,7 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
               <div className="space-y-3">
                 {groupTransactions.map((transaction, txIndex) => (
             <div key={transaction.id} className="border-b border-slate-600 last:border-b-0 pb-3 last:pb-0 transition-all hover:bg-opacity-30 rounded-lg px-2 py-1">
-              {editingId === transaction.id ? (
+              {false ? (
                 <div className="space-y-3">
                   <div className="flex gap-4">
                     <label className="flex items-center gap-2">
@@ -638,13 +747,13 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => saveEdit(transaction.id)}
+                      onClick={() => {}}
                       className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
                     >
                       Simpan
                     </button>
                     <button
-                      onClick={cancelEdit}
+                      onClick={() => {}}
                       className="px-3 py-1 bg-slate-500 text-white rounded text-sm hover:bg-slate-400"
                     >
                       Batal
@@ -697,15 +806,6 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                     </div>
                     <div className="flex gap-1">
                       <button
-                        onClick={() => startEdit(transaction)}
-                        className={`text-purple-400 hover:bg-gray-800 rounded ${
-                          isInSidebar ? 'p-0.5 text-xs' : 'p-1'
-                        }`}
-                        title="Edit"
-                      >
-                        <Edit className="w-3 h-3" />
-                      </button>
-                      <button
                         onClick={() => setDeleteConfirmId(transaction.id)}
                         className={`text-red-400 hover:bg-gray-800 rounded ${
                           isInSidebar ? 'p-0.5 text-xs' : 'p-1'
@@ -726,40 +826,431 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full bg-gray-800 rounded-lg overflow-hidden">
-              <thead className="bg-gray-700">
+            <table className="w-full bg-gray-800/30 rounded-xl overflow-hidden border border-gray-700/30">
+              <thead className="bg-gray-700/20">
                 <tr>
-                  <th className="px-4 py-3 text-left text-gray-300 font-medium">Date</th>
-                  <th className="px-4 py-3 text-left text-gray-300 font-medium">Description</th>
-                  <th className="px-4 py-3 text-left text-gray-300 font-medium">Category</th>
-                  <th className="px-4 py-3 text-left text-gray-300 font-medium">Subcategory</th>
-                  {selectedWallet === 'global' && <th className="px-4 py-3 text-left text-gray-300 font-medium">Wallet</th>}
-                  <th className="px-4 py-3 text-right text-gray-300 font-medium">Amount</th>
-                  <th className="px-4 py-3 text-center text-gray-300 font-medium">Actions</th>
+                  {deleteMode && <th className="px-6 py-4 text-center text-gray-300 font-semibold text-xs uppercase tracking-wider">Select</th>}
+                  <th className="px-6 py-4 text-center text-gray-300 font-semibold text-xs uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-4 text-left text-gray-300 font-semibold text-xs uppercase tracking-wider w-40">Date & Time</th>
+                  <th className="px-6 py-4 text-left text-gray-300 font-semibold text-xs uppercase tracking-wider">Description</th>
+                  <th className="px-6 py-4 text-left text-gray-300 font-semibold text-xs uppercase tracking-wider">Category</th>
+                  <th className="px-6 py-4 text-left text-gray-300 font-semibold text-xs uppercase tracking-wider">Subcategory</th>
+                  {selectedWallet === 'global' && <th className="px-6 py-4 text-left text-gray-300 font-semibold text-xs uppercase tracking-wider min-w-[140px]">Wallet</th>}
+                  <th className="px-6 py-4 text-right text-gray-300 font-semibold text-xs uppercase tracking-wider">Amount</th>
                 </tr>
               </thead>
               <tbody>
+                {/* Add New Row */}
+                {!deleteMode && (!isAddingNew ? (
+                  <tr className="border-t border-gray-600 bg-gray-750">
+                    <td colSpan={selectedWallet === 'global' ? 7 : 6} className="px-4 py-3 text-center">
+                      <button
+                        onClick={() => setIsAddingNew(true)}
+                        className="text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded px-4 py-2 text-sm transition-colors"
+                      >
+                        + Add new transaction
+                      </button>
+                    </td>
+                  </tr>
+                ) : (
+                  <><tr className="border-t border-gray-600 bg-gray-750">
+                          {deleteMode && <td className="px-4 py-3"></td>}
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => setNewTransaction({ ...newTransaction, type: newTransaction.type === 'income' ? 'expense' : 'income' })}
+                              className={`p-1 rounded transition-colors ${newTransaction.type === 'income' ? 'text-green-400 hover:bg-green-400/20' : 'text-red-400 hover:bg-red-400/20'}`}
+                              title={newTransaction.type === 'income' ? 'Income' : 'Expense'}
+                            >
+                              {newTransaction.type === 'income' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                            </button>
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="datetime-local"
+                              value={`${newTransaction.date}T${newTransaction.time}`}
+                              onChange={(e) => {
+                                const [date, time] = e.target.value.split('T');
+                                setNewTransaction({ ...newTransaction, date, time });
+                              }}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input
+                              type="text"
+                              value={newTransaction.description}
+                              onChange={(e) => setNewTransaction({ ...newTransaction, description: e.target.value })}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
+                              placeholder="Description" />
+                          </td>
+                          <td className="px-4 py-3 relative">
+                            <input
+                              type="text"
+                              value={newTransaction.category}
+                              onChange={(e) => {
+                                setNewTransaction({ ...newTransaction, category: e.target.value });
+                                setSelectedCategoryIndex(-1);
+                              } }
+                              onFocus={() => setShowCategorySuggestions(true)}
+                              onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 200)}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
+                              placeholder="Category" />
+                            {showCategorySuggestions && (() => {
+                              const existingCategories = [...new Set(transactions.map(t => t.category))]
+                                .filter(cat => cat.toLowerCase().includes(newTransaction.category.toLowerCase()))
+                                .slice(0, 5);
+
+                              return existingCategories.length > 0 ? (
+                                <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded mt-1 max-h-32 overflow-y-auto z-20">
+                                  {existingCategories.map((cat, index) => (
+                                    <button
+                                      key={cat}
+                                      type="button"
+                                      onClick={() => {
+                                        setNewTransaction({ ...newTransaction, category: cat });
+                                        setShowCategorySuggestions(false);
+                                      } }
+                                      className={`w-full text-left px-3 py-2 text-gray-100 text-sm hover:bg-gray-600`}
+                                    >
+                                      {cat}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null;
+                            })()}
+                          </td>
+                          <td className="px-4 py-3 relative">
+                            <input
+                              type="text"
+                              value={newTransaction.subcategory}
+                              onChange={(e) => {
+                                setNewTransaction({ ...newTransaction, subcategory: e.target.value });
+                                setSelectedSuggestionIndex(-1);
+                              } }
+                              onFocus={() => setShowSubcategorySuggestions(true)}
+                              onBlur={() => setTimeout(() => setShowSubcategorySuggestions(false), 200)}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
+                              placeholder="Subcategory" />
+                            {showSubcategorySuggestions && (() => {
+                              const existingSubcategories = [...new Set(transactions.map(t => t.subcategory).filter(Boolean))]
+                                .filter(sub => sub!.toLowerCase().includes(newTransaction.subcategory.toLowerCase()))
+                                .slice(0, 5);
+
+                              return existingSubcategories.length > 0 ? (
+                                <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded mt-1 max-h-32 overflow-y-auto z-20">
+                                  {existingSubcategories.map((sub, index) => (
+                                    <button
+                                      key={sub}
+                                      type="button"
+                                      onClick={() => {
+                                        setNewTransaction({ ...newTransaction, subcategory: sub! });
+                                        setShowSubcategorySuggestions(false);
+                                      } }
+                                      className={`w-full text-left px-3 py-2 text-gray-100 text-sm hover:bg-gray-600`}
+                                    >
+                                      {sub}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null;
+                            })()}
+                          </td>
+                          {selectedWallet === 'global' && (
+                            <td className="px-4 py-3">
+                              <select
+                                value={newTransaction.wallet_id || ''}
+                                onChange={(e) => setNewTransaction({ ...newTransaction, wallet_id: e.target.value })}
+                                className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm truncate"
+                              >
+                                <option value="">Select Wallet</option>
+                                {wallets.filter(wallet => wallet.id !== 'global').map(wallet => (
+                                  <option key={wallet.id} value={wallet.id}>{wallet.name}</option>
+                                ))}
+                              </select>
+                            </td>
+                          )}
+                          <td className="px-4 py-3">
+                            <input
+                              type="text"
+                              value={newTransaction.amount}
+                              onChange={(e) => setNewTransaction({ ...newTransaction, amount: formatNumber(e.target.value) })}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm text-right"
+                              placeholder="Amount" />
+                          </td>
+                        </tr>
+                          {/* Add/Cancel buttons for new transaction */}
+                          <tr className="border-t border-gray-600 bg-gray-750">
+                            <td colSpan={deleteMode ? (selectedWallet === 'global' ? 8 : 7) : (selectedWallet === 'global' ? 7 : 6)} className="px-4 py-3 text-center">
+                              <div className="flex justify-center gap-2">
+                                <button
+                                  onClick={addNewTransaction}
+                                  className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
+                                  disabled={!newTransaction.amount || !newTransaction.category || !newTransaction.description}
+                                >
+                                  Add Transaction
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setIsAddingNew(false);
+                                    setNewTransaction({
+                                      amount: '',
+                                      description: '',
+                                      category: '',
+                                      subcategory: '',
+                                      type: 'expense',
+                                      date: new Date().toISOString().split('T')[0],
+                                      time: new Date().toTimeString().slice(0, 5),
+                                      wallet_id: ''
+                                    });
+                                  } }
+                                  className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </td>
+                          </tr></>
+                ))}
+                
+                {/* Existing Transactions */}
                 {Object.entries(paginatedGroups).map(([dateGroup, groupTransactions]) =>
                   groupTransactions.map((transaction, index) => (
-                    <tr key={transaction.id} className="border-t border-gray-600 hover:bg-gray-700 transition-colors">
-                      <td className="px-4 py-3 text-gray-300 text-sm">
-                        <div>{new Date(transaction.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</div>
-                        {transaction.time && <div className="text-xs text-gray-400">{transaction.time}</div>}
+                    <motion.tr
+                      key={transaction.id}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`border-t border-gray-600/20 transition-all duration-200 ${
+                        deleteMode 
+                          ? `cursor-pointer ${selectedTransactions.has(transaction.id) ? 'bg-purple-600/20 border-purple-500/30' : 'hover:bg-gray-700/20'}` 
+                          : 'hover:bg-gray-700/20'
+                      }`}
+                      onClick={deleteMode ? () => {
+                        const newSelected = new Set(selectedTransactions);
+                        if (selectedTransactions.has(transaction.id)) {
+                          newSelected.delete(transaction.id);
+                        } else {
+                          newSelected.add(transaction.id);
+                        }
+                        setSelectedTransactions(newSelected);
+                      } : undefined}
+                    >
+                      {deleteMode && (
+                        <td className="px-4 py-3 text-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedTransactions.has(transaction.id)}
+                            onChange={(e) => {
+                              const newSelected = new Set(selectedTransactions);
+                              if (e.target.checked) {
+                                newSelected.add(transaction.id);
+                              } else {
+                                newSelected.delete(transaction.id);
+                              }
+                              setSelectedTransactions(newSelected);
+                            }}
+                            className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+                          />
+                        </td>
+                      )}
+                      <td className="px-4 py-3 text-center">
+                        {deleteMode ? (
+                          <div className={`p-1 rounded ${
+                            transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
+                          }`}>
+                            {transaction.type === 'income' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newType = transaction.type === 'income' ? 'expense' : 'income';
+                              setEditForm({...editForm, type: newType});
+                              onEditTransaction(transaction.id, {
+                                ...transaction,
+                                type: newType
+                              });
+                            }}
+                            className={`p-1 rounded cursor-pointer transition-colors ${
+                              transaction.type === 'income' ? 'text-green-400 hover:bg-green-400/20' : 'text-red-400 hover:bg-red-400/20'
+                            }`}
+                            title={transaction.type === 'income' ? 'Income' : 'Expense'}
+                          >
+                            {transaction.type === 'income' ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+                          </button>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-gray-100">
-                        {transaction.description || (transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran')}
+                      <td className="px-4 py-3">
+                        {!deleteMode && editingCell?.id === transaction.id && editingCell?.field === 'datetime' ? (
+                          <input
+                            type="datetime-local"
+                            value={`${editForm.date}T${editForm.time}`}
+                            onChange={(e) => {
+                              const [date, time] = e.target.value.split('T');
+                              setEditForm({...editForm, date, time});
+                            }}
+                            onBlur={() => saveCellEdit(transaction.id, 'datetime')}
+                            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
+                            autoFocus
+                          />
+                        ) : (
+                          <div
+                            onClick={!deleteMode ? (e) => {
+                              e.stopPropagation();
+                              startCellEdit(transaction.id, 'datetime');
+                            } : undefined}
+                            className={`px-2 py-1 text-gray-300 rounded text-sm min-h-[24px] ${
+                              !deleteMode ? 'hover:bg-gray-700 cursor-pointer' : ''
+                            }`}
+                          >
+                            {new Date(transaction.date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })} {transaction.time || ''}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-gray-300 text-sm">
-                        <div className="flex items-center gap-1">
-                          {(() => {
-                            const IconComponent = getCategoryIcon(transaction.category);
-                            return <IconComponent className="w-4 h-4 text-purple-400" />;
-                          })()}
-                          <span>{transaction.category}</span>
-                        </div>
+                      <td className="px-4 py-3">
+                        {!deleteMode && editingCell?.id === transaction.id && editingCell?.field === 'description' ? (
+                          <input
+                            type="text"
+                            value={editForm.description}
+                            onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                            onBlur={() => saveCellEdit(transaction.id, 'description')}
+                            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
+                            autoFocus
+                          />
+                        ) : (
+                          <div
+                            onClick={!deleteMode ? (e) => {
+                              e.stopPropagation();
+                              startCellEdit(transaction.id, 'description');
+                            } : undefined}
+                            className={`px-2 py-1 text-gray-100 rounded text-sm min-h-[24px] ${
+                              !deleteMode ? 'hover:bg-gray-700 cursor-pointer' : ''
+                            }`}
+                          >
+                            {transaction.description || (transaction.type === 'income' ? 'Pemasukan' : 'Pengeluaran')}
+                          </div>
+                        )}
                       </td>
-                      <td className="px-4 py-3 text-gray-300 text-sm">
-                        {transaction.subcategory || '-'}
+                      <td className="px-4 py-3 relative">
+                        {!deleteMode && editingCell?.id === transaction.id && editingCell?.field === 'category' ? (
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={editForm.category}
+                              onChange={(e) => {
+                                setEditForm({...editForm, category: e.target.value});
+                                setSelectedCategoryIndex(-1);
+                              }}
+                              onFocus={() => setShowCategorySuggestions(true)}
+                              onBlur={() => {
+                                setTimeout(() => {
+                                  setShowCategorySuggestions(false);
+                                  saveCellEdit(transaction.id, 'category');
+                                }, 200);
+                              }}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
+                              autoFocus
+                            />
+                            {showCategorySuggestions && (() => {
+                              const existingCategories = [...new Set(transactions.map(t => t.category))]
+                                .filter(cat => cat.toLowerCase().includes(editForm.category.toLowerCase()))
+                                .slice(0, 5);
+                              
+                              return existingCategories.length > 0 ? (
+                                <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded mt-1 max-h-32 overflow-y-auto z-20">
+                                  {existingCategories.map((cat, index) => (
+                                    <button
+                                      key={cat}
+                                      type="button"
+                                      onClick={() => {
+                                        setEditForm({...editForm, category: cat});
+                                        setShowCategorySuggestions(false);
+                                        saveCellEdit(transaction.id, 'category');
+                                      }}
+                                      className={`w-full text-left px-3 py-2 text-gray-100 text-sm hover:bg-gray-600`}
+                                    >
+                                      {cat}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null;
+                            })()}
+                          </div>
+                        ) : (
+                          <div
+                            onClick={!deleteMode ? (e) => {
+                              e.stopPropagation();
+                              startCellEdit(transaction.id, 'category');
+                            } : undefined}
+                            className={`px-2 py-1 text-gray-300 rounded text-sm min-h-[24px] flex items-center gap-1 ${
+                              !deleteMode ? 'hover:bg-gray-700 cursor-pointer' : ''
+                            }`}
+                          >
+                            {(() => {
+                              const IconComponent = getCategoryIcon(transaction.category);
+                              return <IconComponent className="w-4 h-4 text-purple-400" />;
+                            })()}
+                            <span>{transaction.category}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 relative">
+                        {!deleteMode && editingCell?.id === transaction.id && editingCell?.field === 'subcategory' ? (
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={editForm.subcategory}
+                              onChange={(e) => {
+                                setEditForm({...editForm, subcategory: e.target.value});
+                                setSelectedSuggestionIndex(-1);
+                              }}
+                              onFocus={() => setShowSubcategorySuggestions(true)}
+                              onBlur={() => {
+                                setTimeout(() => {
+                                  setShowSubcategorySuggestions(false);
+                                  saveCellEdit(transaction.id, 'subcategory');
+                                }, 200);
+                              }}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm"
+                              autoFocus
+                            />
+                            {showSubcategorySuggestions && (() => {
+                              const existingSubcategories = [...new Set(transactions.map(t => t.subcategory).filter(Boolean))]
+                                .filter(sub => sub!.toLowerCase().includes(editForm.subcategory.toLowerCase()))
+                                .slice(0, 5);
+                              
+                              return existingSubcategories.length > 0 ? (
+                                <div className="absolute top-full left-0 right-0 bg-gray-700 border border-gray-600 rounded mt-1 max-h-32 overflow-y-auto z-20">
+                                  {existingSubcategories.map((sub, index) => (
+                                    <button
+                                      key={sub}
+                                      type="button"
+                                      onClick={() => {
+                                        setEditForm({...editForm, subcategory: sub!});
+                                        setShowSubcategorySuggestions(false);
+                                        saveCellEdit(transaction.id, 'subcategory');
+                                      }}
+                                      className={`w-full text-left px-3 py-2 text-gray-100 text-sm hover:bg-gray-600`}
+                                    >
+                                      {sub}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null;
+                            })()}
+                          </div>
+                        ) : (
+                          <div
+                            onClick={!deleteMode ? (e) => {
+                              e.stopPropagation();
+                              startCellEdit(transaction.id, 'subcategory');
+                            } : undefined}
+                            className={`px-2 py-1 text-gray-300 rounded text-sm min-h-[24px] ${
+                              !deleteMode ? 'hover:bg-gray-700 cursor-pointer' : ''
+                            }`}
+                          >
+                            {transaction.subcategory || '-'}
+                          </div>
+                        )}
                       </td>
                       {selectedWallet === 'global' && (
                         <td className="px-4 py-3 text-gray-300 text-sm">
@@ -774,31 +1265,32 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                           )}
                         </td>
                       )}
-                      <td className={`px-4 py-3 text-right font-medium ${
-                        transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {transaction.type === 'income' ? '+' : '-'}
-                        {formatIDR(Math.abs(transaction.amount))}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex justify-center gap-1">
-                          <button
-                            onClick={() => startEdit(transaction)}
-                            className="p-1 text-purple-400 hover:bg-gray-800 rounded"
-                            title="Edit"
+                      <td className="px-4 py-3">
+                        {!deleteMode && editingCell?.id === transaction.id && editingCell?.field === 'amount' ? (
+                          <input
+                            type="text"
+                            value={editForm.amount}
+                            onChange={(e) => handleEditAmountChange(e.target.value)}
+                            onBlur={() => saveCellEdit(transaction.id, 'amount')}
+                            className="w-full px-2 py-1 bg-gray-700 border border-gray-600 text-gray-100 rounded text-sm text-right"
+                            autoFocus
+                          />
+                        ) : (
+                          <div
+                            onClick={!deleteMode ? (e) => {
+                              e.stopPropagation();
+                              startCellEdit(transaction.id, 'amount');
+                            } : undefined}
+                            className={`px-2 py-1 rounded text-sm text-right font-medium min-h-[24px] ${
+                              transaction.type === 'income' ? 'text-green-400' : 'text-red-400'
+                            } ${!deleteMode ? 'hover:bg-gray-700 cursor-pointer' : ''}`}
                           >
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmId(transaction.id)}
-                            className="p-1 text-red-400 hover:bg-gray-800 rounded"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
+                            {transaction.type === 'income' ? '+' : '-'}
+                            {formatIDR(Math.abs(transaction.amount))}
+                          </div>
+                        )}
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))
                 )}
               </tbody>
@@ -867,6 +1359,43 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
                 className="flex-1 bg-slate-600 text-white py-2 rounded-lg font-medium hover:bg-slate-500 transition-colors"
               >
                 Batal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBulkDeleteConfirm && (
+        <div 
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(10px)' }}
+          onClick={() => setShowBulkDeleteConfirm(false)}
+        >
+          <div 
+            className="bg-slate-700 rounded-xl p-6 border border-slate-600 shadow-2xl max-w-sm mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-gray-100 mb-4">Confirm Delete</h3>
+            <p className="text-gray-300 mb-6">
+              Are you sure you want to delete {selectedTransactions.size} transaction{selectedTransactions.size > 1 ? 's' : ''}?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  selectedTransactions.forEach(id => onDeleteTransaction(id));
+                  setSelectedTransactions(new Set());
+                  setDeleteMode(false);
+                  setShowBulkDeleteConfirm(false);
+                }}
+                className="flex-1 bg-red-600 text-white py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+              <button
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="flex-1 bg-slate-600 text-white py-2 rounded-lg font-medium hover:bg-slate-500 transition-colors"
+              >
+                Cancel
               </button>
             </div>
           </div>

@@ -17,7 +17,7 @@ import WalletBalance from '../components/WalletBalance';
 import WalletManager from '../components/WalletManager';
 import WalletSelector from '../components/WalletSelector';
 import { DashboardCard } from '../components/DashboardCustomizer';
-import { DollarSign, Settings, ArrowLeftRight, Edit, Plus, X, Lightbulb, BarChart3, Wallet2, Menu } from 'lucide-react';
+import { DollarSign, Settings, Plus, X, BarChart3, Wallet2, Menu, TrendingUp, Target, Eye, PlusCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
@@ -25,15 +25,11 @@ interface Props {
   setDashboardCards: (cards: DashboardCard[]) => void;
 }
 
+type ViewType = 'transactions' | 'financial-analysis' | 'budget-goals' | 'quick-overview' | 'add-transaction' | 'wallets' | 'settings';
+
 export default function Dashboard({ dashboardCards, setDashboardCards }: Props) {
-  const [editMode, setEditMode] = useState(false);
-  const [showCardModal, setShowCardModal] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<{section: 'sidebar' | 'main', index: number} | null>(null);
-  const [swapMode, setSwapMode] = useState(false);
-  const [firstSwapCard, setFirstSwapCard] = useState<DashboardCard | null>(null);
+  const [currentView, setCurrentView] = useState<ViewType>('transactions');
   const [showTransactionModal, setShowTransactionModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showWalletManager, setShowWalletManager] = useState(false);
   const [selectedWallet, setSelectedWallet] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
@@ -53,176 +49,186 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
     ? transactions 
     : transactions.filter(t => t.wallet_id === selectedWallet);
 
-  const handleSlotClick = (section: 'sidebar' | 'main', index: number) => {
-    setSelectedSlot({ section, index });
-    setShowCardModal(true);
-  };
+  const menuItems = [
+    {
+      id: 'transactions' as ViewType,
+      name: 'Transactions',
+      icon: <BarChart3 className="w-5 h-5" />,
+      category: 'main'
+    },
+    {
+      id: 'financial-analysis' as ViewType,
+      name: 'Financial Analysis',
+      icon: <TrendingUp className="w-5 h-5" />,
+      category: 'analysis'
+    },
+    {
+      id: 'budget-goals' as ViewType,
+      name: 'Budget & Goals',
+      icon: <Target className="w-5 h-5" />,
+      category: 'planning'
+    },
+    {
+      id: 'quick-overview' as ViewType,
+      name: 'Quick Overview',
+      icon: <Eye className="w-5 h-5" />,
+      category: 'overview'
+    },
+    {
+      id: 'add-transaction' as ViewType,
+      name: 'Add Transaction',
+      icon: <PlusCircle className="w-5 h-5" />,
+      category: 'actions'
+    },
+    {
+      id: 'wallets' as ViewType,
+      name: 'Wallets',
+      icon: <Wallet2 className="w-5 h-5" />,
+      category: 'management'
+    },
+    {
+      id: 'settings' as ViewType,
+      name: 'Settings',
+      icon: <Settings className="w-5 h-5" />,
+      category: 'management'
+    }
+  ];
 
-  const handleCardSelect = (cardId: string) => {
-    if (!selectedSlot) return;
-    
-    const updatedCards = dashboardCards.map(card => {
-      if (card.id === cardId) {
-        return { ...card, enabled: true, section: selectedSlot.section, sectionIndex: selectedSlot.index };
-      }
-      return card;
-    });
-    
-    setDashboardCards(updatedCards);
-    setShowCardModal(false);
-    setSelectedSlot(null);
-  };
-
-  const handleCardRemove = (cardId: string) => {
-    const updatedCards = dashboardCards.map(card => 
-      card.id === cardId ? { ...card, enabled: false } : card
-    );
-    setDashboardCards(updatedCards);
-  };
-
-  const handleCardSwap = (card: DashboardCard) => {
-    if (!firstSwapCard) {
-      setFirstSwapCard(card);
-    } else {
-      const updatedCards = dashboardCards.map(c => {
-        if (c.id === firstSwapCard.id) {
-          return { ...c, section: card.section, sectionIndex: card.sectionIndex };
-        }
-        if (c.id === card.id) {
-          return { ...c, section: firstSwapCard.section, sectionIndex: firstSwapCard.sectionIndex };
-        }
-        return c;
-      });
-      setDashboardCards(updatedCards);
-      setFirstSwapCard(null);
+  const renderMainContent = () => {
+    switch (currentView) {
+      case 'transactions':
+        return (
+          <TransactionList 
+            transactions={filteredTransactions} 
+            onEditTransaction={editTransaction}
+            onDeleteTransaction={deleteTransaction}
+            onAddTransaction={addTransaction}
+            onImportTransactions={(transactions, walletId) => {
+              const transactionsWithWallet = transactions.map(t => ({
+                ...t,
+                wallet_id: walletId === 'global' ? undefined : walletId
+              }));
+              importTransactions(transactionsWithWallet);
+            }}
+            wallets={wallets}
+            isInSidebar={false}
+            selectedWallet={selectedWallet}
+          />
+        );
+      
+      case 'financial-analysis':
+        return (
+          <div className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Financial Analysis</h2>
+              <p className="text-gray-400">Comprehensive analysis of your financial data</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Chart transactions={filteredTransactions} />
+              <CategoryCharts transactions={filteredTransactions} isInSidebar={false} />
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <SpendingTrends transactions={transactions} />
+              <SpendingInsights transactions={transactions} />
+            </div>
+            <FinancialHealth transactions={transactions} />
+          </div>
+        );
+      
+      case 'budget-goals':
+        return (
+          <div className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Budget & Goals</h2>
+              <p className="text-gray-400">Track your budget and savings goals</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <BudgetTracker transactions={transactions} />
+              <SavingsGoals />
+            </div>
+          </div>
+        );
+      
+      case 'quick-overview':
+        return (
+          <div className="space-y-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Quick Overview</h2>
+              <p className="text-gray-400">Essential financial metrics at a glance</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Balance transactions={filteredTransactions} />
+              <QuickStats transactions={filteredTransactions} />
+            </div>
+          </div>
+        );
+      
+      case 'add-transaction':
+        return (
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Add Transaction</h2>
+              <p className="text-gray-400">Record your income or expense</p>
+            </div>
+            <TransactionForm 
+              onAddTransaction={addTransaction} 
+              selectedWallet={selectedWallet} 
+              wallets={wallets}
+              onCreateWallet={() => {
+                setCurrentView('wallets');
+                setTimeout(() => {
+                  const event = new CustomEvent('expandWalletForm');
+                  window.dispatchEvent(event);
+                }, 100);
+              }}
+            />
+          </div>
+        );
+      
+      case 'wallets':
+        return (
+          <div className="max-w-4xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Wallet Management</h2>
+              <p className="text-gray-400">Create and manage your wallets</p>
+            </div>
+            <WalletManager 
+              onAddTransaction={addTransaction}
+              onWalletChange={refreshWallets}
+              selectedWallet={selectedWallet}
+              onWalletSelect={setSelectedWallet}
+              deleteTransactionsByWallet={deleteTransactionsByWallet}
+              transactions={transactions}
+            />
+          </div>
+        );
+      
+      case 'settings':
+        return (
+          <div className="max-w-2xl mx-auto">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-white mb-2">Settings</h2>
+              <p className="text-gray-400">Manage your application settings</p>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+              <h3 className="text-xl font-semibold text-white mb-4">Data Management</h3>
+              <p className="text-gray-400 mb-6">
+                Reset all your data. This action cannot be undone.
+              </p>
+              <button
+                onClick={() => setShowResetModal(true)}
+                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+              >
+                Reset Data
+              </button>
+            </div>
+          </div>
+        );
+      
+      default:
+        return null;
     }
   };
-
-  const renderCard = (card: DashboardCard | null, section: 'sidebar' | 'main', index: number) => {
-    if (!card) {
-      // Empty slot placeholder
-      if (!editMode) return null;
-      return (
-        <div 
-          onClick={() => handleSlotClick(section, index)}
-          className="bg-gray-800 border-2 border-dashed border-gray-600 rounded-xl p-8 text-center cursor-pointer hover:border-purple-500 hover:bg-gray-700 transition-all group"
-        >
-          <div className="text-gray-400 group-hover:text-purple-400 transition-colors mb-3 flex justify-center">
-            <Plus className="w-8 h-8" />
-          </div>
-          <p className="text-gray-400 group-hover:text-gray-300 text-sm font-medium transition-colors">Add Widget</p>
-          <p className="text-gray-500 text-xs mt-1">Click to add a new card</p>
-        </div>
-      );
-    }
-    
-    const cardContent = (() => {
-      switch (card.id) {
-      case 'balance':
-        return <Balance transactions={filteredTransactions} />;
-      case 'chart':
-        return window.innerWidth >= 1024 ? <Chart transactions={filteredTransactions} /> : null;
-      case 'quickstats':
-        return <QuickStats transactions={filteredTransactions} />;
-      case 'categorycharts':
-        const categoryChartsInSidebar = sidebarSlots.some(c => c?.id === 'categorycharts');
-        return <CategoryCharts transactions={filteredTransactions} isInSidebar={categoryChartsInSidebar} />;
-      case 'health':
-        return <FinancialHealth transactions={transactions} />;
-      case 'insights':
-        return <SpendingInsights transactions={transactions} />;
-      case 'trends':
-        return <SpendingTrends transactions={transactions} />;
-      case 'budget':
-        return <BudgetTracker transactions={transactions} />;
-      case 'savings':
-        return <SavingsGoals />;
-      case 'form':
-        return <TransactionForm 
-          onAddTransaction={addTransaction} 
-          selectedWallet={selectedWallet} 
-          wallets={wallets}
-          onCreateWallet={() => {
-            setShowWalletManager(true);
-            setShowSettingsModal(false);
-            setTimeout(() => {
-              const event = new CustomEvent('expandWalletForm');
-              window.dispatchEvent(event);
-            }, 100);
-          }}
-        />;
-      case 'list':
-        const isInSidebar = sidebarSlots.some(c => c?.id === 'list');
-        return <TransactionList 
-          transactions={filteredTransactions} 
-          onEditTransaction={editTransaction}
-          onDeleteTransaction={deleteTransaction}
-          onImportTransactions={(transactions, walletId) => {
-            const transactionsWithWallet = transactions.map(t => ({
-              ...t,
-              wallet_id: walletId === 'global' ? undefined : walletId
-            }));
-            importTransactions(transactionsWithWallet);
-          }}
-          wallets={wallets}
-          isInSidebar={isInSidebar}
-          selectedWallet={selectedWallet}
-        />;
-
-        default:
-          return null;
-      }
-    })();
-
-    return (
-      <div className={`relative ${swapMode && firstSwapCard?.id === card.id ? 'ring-2 ring-blue-500' : ''}`}>
-        <div className={editMode ? 'pointer-events-none' : ''}>
-          {cardContent}
-        </div>
-        {editMode && (
-          <div className="absolute top-2 right-2 flex gap-1 z-10">
-            {swapMode ? (
-              <button
-                onClick={() => handleCardSwap(card)}
-                className={`rounded-full w-6 h-6 flex items-center justify-center text-xs transition-colors ${
-                  firstSwapCard?.id === card.id 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700' 
-                    : 'bg-green-600 text-white hover:bg-green-700'
-                }`}
-              >
-                {firstSwapCard?.id === card.id ? '1' : '↔'}
-              </button>
-            ) : (
-              <button
-                onClick={() => handleCardRemove(card.id)}
-                className="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700 transition-colors"
-              >
-                ×
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const enabledCards = dashboardCards.filter(card => card.enabled);
-  const disabledCards = dashboardCards.filter(card => !card.enabled);
-  
-  // Separate cards by section (filter out balance on mobile for sidebar)
-  const sidebarCards = enabledCards.filter(card => {
-    if (window.innerWidth < 1024 && card.id === 'balance') return false;
-    return card.section === 'sidebar';
-  }).sort((a, b) => (a.sectionIndex || 0) - (b.sectionIndex || 0));
-  const mainCards = enabledCards.filter(card => card.section === 'main').sort((a, b) => (a.sectionIndex || 0) - (b.sectionIndex || 0));
-  
-  // Create arrays with placeholders for empty slots
-  const sidebarSlots = editMode && sidebarCards.length === 0 
-    ? [null] 
-    : [...sidebarCards, ...(editMode ? [null] : [])];
-  const mainSlots = editMode && mainCards.length === 0 
-    ? [null] 
-    : [...mainCards, ...(editMode ? [null] : [])];
 
   if (loading) {
     return (
@@ -252,104 +258,100 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2 pb-32">
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3">
+              Main
+            </div>
+            {menuItems.filter(item => item.category === 'main').map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {item.icon}
+                <span className="font-medium">{item.name}</span>
+              </button>
+            ))}
+            
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
+              Analysis
+            </div>
+            {menuItems.filter(item => item.category === 'analysis').map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </button>
+            ))}
+            
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
+              Planning
+            </div>
+            {menuItems.filter(item => item.category === 'planning').map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </button>
+            ))}
+            
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
               Overview
             </div>
-            <button
-              onClick={() => {
-                setShowSettingsModal(false);
-                setShowWalletManager(false);
-              }}
-              className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                !showSettingsModal && !showWalletManager ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <BarChart3 className="w-5 h-5" />
-              <span className="font-medium">Dashboard</span>
-            </button>
+            {menuItems.filter(item => item.category === 'overview').map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </button>
+            ))}
             
-            <AnimatePresence>
-              {!showSettingsModal && !showWalletManager && (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.2, delay: 0.05 }}
-                  className="space-y-1"
-                >
-                  <AnimatePresence>
-                    {editMode && (
-                      <motion.button
-                        key="swap-cards"
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        exit={{ opacity: 0, x: -20 }}
-                        transition={{ duration: 0.2 }}
-                        onClick={() => {
-                          setSwapMode(!swapMode);
-                          setFirstSwapCard(null);
-                        }}
-                        className={`text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 mr-2 ${
-                          swapMode ? 'bg-green-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                        }`}
-                      >
-                        <ArrowLeftRight className="w-4 h-4" />
-                        <span className="text-sm">{swapMode ? 'Exit Swap' : 'Swap Cards'}</span>
-                      </motion.button>
-                    )}
-                  </AnimatePresence>
-                  <motion.button
-                    layoutId="edit-layout-button"
-                    transition={{ duration: 0.2 }}
-                    onClick={async () => {
-                      if (editMode) {
-                        await setDashboardCards([...dashboardCards]);
-                        setSwapMode(false);
-                        setFirstSwapCard(null);
-                      }
-                      setEditMode(!editMode);
-                    }}
-                    className={`text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ml-6 mr-2 ${
-                      editMode ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                    }`}
-                  >
-                    <Edit className="w-4 h-4" />
-                    <span className="text-sm">{editMode ? 'Save Layout' : 'Edit Layout'}</span>
-                  </motion.button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-            
-            <button 
-              onClick={() => {
-                setShowWalletManager(true);
-                setShowSettingsModal(false);
-              }}
-              className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                showWalletManager ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <Wallet2 className="w-5 h-5" />
-              <span>Wallets</span>
-            </button>
-            
-
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
+              Actions
+            </div>
+            {menuItems.filter(item => item.category === 'actions').map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </button>
+            ))}
             
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
               Management
             </div>
-            <button 
-              onClick={() => {
-                setShowSettingsModal(true);
-                setShowWalletManager(false);
-              }}
-              className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                showSettingsModal ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-              }`}
-            >
-              <Settings className="w-5 h-5" />
-              <span>Settings</span>
-            </button>
+            {menuItems.filter(item => item.category === 'management').map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentView(item.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </button>
+            ))}
           </nav>
           
           {/* Balance Summary */}
@@ -404,8 +406,18 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             
             {/* Desktop Title */}
             <div className="hidden lg:block">
-              <h2 className="text-xl font-semibold text-white">Financial Dashboard</h2>
-              <p className="text-sm text-gray-400">Monitor your financial health and transactions</p>
+              <h2 className="text-xl font-semibold text-white">
+                {menuItems.find(item => item.id === currentView)?.name || 'Dashboard'}
+              </h2>
+              <p className="text-sm text-gray-400">
+                {currentView === 'transactions' && 'Monitor and manage your transactions'}
+                {currentView === 'financial-analysis' && 'Comprehensive analysis of your financial data'}
+                {currentView === 'budget-goals' && 'Track your budget and savings goals'}
+                {currentView === 'quick-overview' && 'Essential financial metrics at a glance'}
+                {currentView === 'add-transaction' && 'Record your income or expense'}
+                {currentView === 'wallets' && 'Create and manage your wallets'}
+                {currentView === 'settings' && 'Manage your application settings'}
+              </p>
             </div>
             
             {/* Right Side - Wallet Picker */}
@@ -426,133 +438,21 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
         {/* Dashboard Content */}
         <main className="p-4 lg:p-8">
           <AnimatePresence mode="wait">
-            {showWalletManager ? (
-              <motion.div
-                key="wallets"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2 }}
-                className="max-w-4xl mx-auto"
-              >
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2, delay: 0.05 }}
-                  className="mb-6"
-                >
-                  <h2 className="text-2xl font-bold text-white">Wallet Management</h2>
-                  <p className="text-gray-400">Create and manage your wallets</p>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2, delay: 0.1 }}
-                >
-                  <WalletManager 
-                    onAddTransaction={addTransaction}
-                    onWalletChange={refreshWallets}
-                    selectedWallet={selectedWallet}
-                    onWalletSelect={setSelectedWallet}
-                    deleteTransactionsByWallet={deleteTransactionsByWallet}
-                    transactions={transactions}
-                  />
-                </motion.div>
-              </motion.div>
-            ) : showSettingsModal ? (
-              <motion.div
-                key="settings"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2 }}
-                className="max-w-2xl mx-auto"
-              >
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.2, delay: 0.05 }}
-                  className="mb-6"
-                >
-                  <h2 className="text-xl lg:text-2xl font-bold text-white">Settings</h2>
-                  <p className="text-gray-400 text-sm lg:text-base">Manage your application settings</p>
-                </motion.div>
-                
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.2, delay: 0.1 }}
-                  className="bg-gray-900 rounded-xl p-4 lg:p-6 border border-gray-700"
-                >
-                  <h3 className="text-lg lg:text-xl font-semibold text-white mb-4">Data Management</h3>
-                  <p className="text-gray-400 mb-6 text-sm lg:text-base">
-                    Reset all your data. This action cannot be undone.
-                  </p>
-                  <button
-                    onClick={() => setShowResetModal(true)}
-                    className="w-full lg:w-auto px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm lg:text-base min-h-[44px]"
-                  >
-                    Reset Data
-                  </button>
-                </motion.div>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="dashboard"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.2 }}
-                className="lg:grid lg:grid-cols-4 lg:gap-6 space-y-6 lg:space-y-0"
-              >
-              {/* Main Cards */}
-              <div className="lg:col-span-3 space-y-6">
-                {/* Mobile: Only TransactionList */}
-                <div className="lg:hidden">
-                  <TransactionList 
-                    transactions={filteredTransactions} 
-                    onEditTransaction={editTransaction}
-                    onDeleteTransaction={deleteTransaction}
-                    onImportTransactions={(transactions, walletId) => {
-                      const transactionsWithWallet = transactions.map(t => ({
-                        ...t,
-                        wallet_id: walletId === 'global' ? undefined : walletId
-                      }));
-                      importTransactions(transactionsWithWallet);
-                    }}
-                    wallets={wallets}
-                    isInSidebar={false}
-                    selectedWallet={selectedWallet}
-                  />
-                </div>
-                
-                {/* Desktop: All cards */}
-                <div className="hidden lg:block space-y-6">
-                  {mainSlots.map((card, index) => (
-                    <div key={`main-${index}`}>
-                      {renderCard(card, 'main', card ? card.sectionIndex || index : mainCards.length)}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              
-              {/* Sidebar Cards */}
-              <div className="lg:col-span-1 space-y-6">
-                {sidebarSlots.map((card, index) => (
-                  <div key={`sidebar-${index}`}>
-                    {renderCard(card, 'sidebar', card ? card.sectionIndex || index : sidebarCards.length)}
-                  </div>
-                ))}
-              </div>
-              </motion.div>
-            )}
+            <motion.div
+              key={currentView}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderMainContent()}
+            </motion.div>
           </AnimatePresence>
         </main>
       </div>
       
-      {/* Mobile Floating Add Button - Only show on Dashboard */}
-      {!showWalletManager && !showSettingsModal && (
+      {/* Mobile Floating Add Button - Only show on transactions view */}
+      {currentView === 'transactions' && (
         <div className="lg:hidden fixed bottom-6 right-6 z-50">
           <button
             onClick={() => setShowTransactionModal(true)}
@@ -609,41 +509,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
         </div>
       )}
         
-        {/* Card Selection Modal */}
-        {showCardModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(10px)' }}>
-            <div className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-lg w-full max-h-[80vh] flex flex-col">
-              <div className="px-4 lg:px-6 py-4 border-b border-gray-700">
-                <h3 className="text-lg font-semibold text-white">Add Widget</h3>
-                <p className="text-sm text-gray-400 mt-1">Choose a widget to add to your dashboard</p>
-              </div>
-              
-              <div className="p-4 lg:p-6 flex-1 overflow-y-auto">
-                <div className="grid grid-cols-2 gap-3">
-                  {dashboardCards.filter(card => !card.enabled || card.section === undefined).map((card) => (
-                    <button
-                      key={card.id}
-                      onClick={() => handleCardSelect(card.id)}
-                      className="flex flex-col items-center gap-3 p-4 lg:p-6 bg-gray-800 rounded-lg hover:bg-gray-700 hover:border-purple-500 border border-gray-600 transition-all text-center group min-h-[80px] lg:min-h-[100px]"
-                    >
-                      <span className="text-xl lg:text-2xl group-hover:scale-110 transition-transform">{card.icon}</span>
-                      <span className="text-gray-100 text-xs lg:text-sm font-medium">{card.name}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              
-              <div className="px-4 lg:px-6 py-4 border-t border-gray-700">
-                <button
-                  onClick={() => setShowCardModal(false)}
-                  className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium min-h-[44px]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+
         
         {/* Mobile Menu */}
         {showMobileMenu && (
@@ -665,47 +531,21 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
               </div>
               
               <nav className="px-4 py-6 space-y-2">
-                <button
-                  onClick={() => {
-                    setShowSettingsModal(false);
-                    setShowWalletManager(false);
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                    !showSettingsModal && !showWalletManager ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                  }`}
-                >
-                  <BarChart3 className="w-5 h-5" />
-                  <span className="font-medium">Dashboard</span>
-                </button>
-                
-                <button 
-                  onClick={() => {
-                    setShowWalletManager(true);
-                    setShowSettingsModal(false);
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                    showWalletManager ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                  }`}
-                >
-                  <Wallet2 className="w-5 h-5" />
-                  <span>Wallets</span>
-                </button>
-                
-                <button 
-                  onClick={() => {
-                    setShowSettingsModal(true);
-                    setShowWalletManager(false);
-                    setShowMobileMenu(false);
-                  }}
-                  className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                    showSettingsModal ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                  }`}
-                >
-                  <Settings className="w-5 h-5" />
-                  <span>Settings</span>
-                </button>
+                {menuItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setCurrentView(item.id);
+                      setShowMobileMenu(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
+                      currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    {item.icon}
+                    <span className="font-medium">{item.name}</span>
+                  </button>
+                ))}
               </nav>
               
               {/* Mobile Balance Summary */}
