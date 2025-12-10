@@ -6,7 +6,7 @@ import TransactionForm from '../components/TransactionForm';
 import WalletSelector from '../components/WalletSelector';
 import ViewRenderer from '../components/ViewRenderer';
 import { DashboardCard } from '../components/DashboardCustomizer';
-import { DollarSign, Settings, Plus, X, BarChart3, Wallet2, Menu, TrendingUp, Target, Eye, PlusCircle } from 'lucide-react';
+import { DollarSign, Settings, Plus, X, BarChart3, Wallet2, Menu, TrendingUp, Target, Eye, PlusCircle, BookOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { calculateTotalBalance, formatBalance, getBalanceColor } from '../utils/balance';
 
@@ -15,7 +15,7 @@ interface Props {
   setDashboardCards: (cards: DashboardCard[]) => void;
 }
 
-type ViewType = 'transactions' | 'financial-analysis' | 'budget-goals' | 'quick-overview' | 'add-transaction' | 'wallets' | 'settings';
+type ViewType = 'transactions' | 'financial-analysis' | 'budget-goals' | 'quick-overview' | 'add-transaction' | 'wallets' | 'settings' | 'guide';
 
 export default function Dashboard({ dashboardCards, setDashboardCards }: Props) {
   const { state, transactions, filteredTransactions, wallets, actions, refreshWallets } = useDashboardViewModel();
@@ -58,6 +58,12 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       name: 'Wallets',
       icon: <Wallet2 className="w-5 h-5" />,
       category: 'management'
+    },
+    {
+      id: 'guide' as ViewType,
+      name: 'Financial Guide',
+      icon: <BookOpen className="w-5 h-5" />,
+      category: 'learning'
     },
     {
       id: 'settings' as ViewType,
@@ -177,6 +183,22 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             ))}
             
             <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
+              Learning
+            </div>
+            {menuItems.filter(item => item.category === 'learning').map((item) => (
+              <button
+                key={item.id}
+                onClick={() => actions.setCurrentView(item.id)}
+                className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
+                  state.currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {item.icon}
+                <span>{item.name}</span>
+              </button>
+            ))}
+            
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2 mb-3 mt-6">
               Management
             </div>
             {menuItems.filter(item => item.category === 'management').map((item) => (
@@ -229,7 +251,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             {/* Desktop Title */}
             <div className="hidden lg:block">
               <h2 className="text-xl font-semibold text-white">
-                {menuItems.find(item => item.id === state.currentView)?.name || 'Dashboard'}
+                {state.currentView === 'guide' ? 'Financial Guide' : (menuItems.find(item => item.id === state.currentView)?.name || 'Dashboard')}
               </h2>
               <p className="text-sm text-gray-400">
                 {state.currentView === 'transactions' && 'Monitor and manage your transactions'}
@@ -238,6 +260,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 {state.currentView === 'quick-overview' && 'Essential financial metrics at a glance'}
                 {state.currentView === 'add-transaction' && 'Record your income or expense'}
                 {state.currentView === 'wallets' && 'Create and manage your wallets'}
+                {state.currentView === 'guide' && 'Learn how to achieve better financial health for your household'}
                 {state.currentView === 'settings' && 'Manage your application settings'}
               </p>
             </div>
@@ -283,6 +306,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 onResetData={actions.resetData}
                 onShowResetModal={actions.showResetModal}
                 onNavigateToWallets={actions.navigateToWallets}
+                onNavigateToView={actions.setCurrentView}
               />
             </motion.div>
           </AnimatePresence>

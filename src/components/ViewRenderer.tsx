@@ -12,8 +12,9 @@ import SpendingInsights from './SpendingInsights';
 import CategoryCharts from './CategoryCharts';
 import WalletManager from './WalletManager';
 import TransactionForm from './TransactionForm';
+import Guide from './Guide';
 
-type ViewType = 'transactions' | 'financial-analysis' | 'budget-goals' | 'quick-overview' | 'add-transaction' | 'wallets' | 'settings';
+type ViewType = 'transactions' | 'financial-analysis' | 'budget-goals' | 'quick-overview' | 'add-transaction' | 'wallets' | 'settings' | 'guide';
 
 interface Props {
   currentView: ViewType;
@@ -31,6 +32,7 @@ interface Props {
   onResetData: () => void;
   onShowResetModal: () => void;
   onNavigateToWallets: () => void;
+  onNavigateToView?: (view: ViewType) => void;
 }
 
 export default function ViewRenderer(props: Props) {
@@ -93,6 +95,24 @@ export default function ViewRenderer(props: Props) {
           transactions={props.transactions}
         />
       </div>
+    ),
+    guide: (
+      <Guide 
+        onNavigate={(route) => {
+          // Handle navigation to different views
+          if (route === '/dashboard') {
+            props.onNavigateToView?.('financial-analysis');
+          }
+        }}
+        onOpenTransactionForm={() => {
+          // Navigate to add-transaction view
+          props.onNavigateToView?.('add-transaction');
+        }}
+        onOpenWalletManager={() => {
+          // Navigate to wallets view
+          props.onNavigateToView?.('wallets');
+        }}
+      />
     ),
     settings: (
       <div className="max-w-2xl mx-auto">
