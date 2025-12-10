@@ -15,12 +15,6 @@ import TransactionForm from './TransactionForm';
 
 type ViewType = 'transactions' | 'financial-analysis' | 'budget-goals' | 'quick-overview' | 'add-transaction' | 'wallets' | 'settings';
 
-interface ViewConfig {
-  component: ReactNode;
-  title: string;
-  description: string;
-}
-
 interface Props {
   currentView: ViewType;
   transactions: Transaction[];
@@ -39,134 +33,88 @@ interface Props {
   onNavigateToWallets: () => void;
 }
 
-export default function ViewRenderer({
-  currentView,
-  transactions,
-  filteredTransactions,
-  wallets,
-  selectedWallet,
-  onAddTransaction,
-  onEditTransaction,
-  onDeleteTransaction,
-  onImportTransactions,
-  onDeleteTransactionsByWallet,
-  onRefreshWallets,
-  onWalletSelect,
-  onResetData,
-  onShowResetModal,
-  onNavigateToWallets
-}: Props) {
-  const viewConfigs: Record<ViewType, ViewConfig> = {
-    transactions: {
-      title: 'Transactions',
-      description: 'Monitor and manage your transactions',
-      component: (
-        <TransactionList 
-          transactions={filteredTransactions} 
-          onEditTransaction={onEditTransaction}
-          onDeleteTransaction={onDeleteTransaction}
-          onAddTransaction={onAddTransaction}
-          onImportTransactions={onImportTransactions}
-          wallets={wallets}
-          isInSidebar={false}
-          selectedWallet={selectedWallet}
+export default function ViewRenderer(props: Props) {
+  const views: Record<ViewType, ReactNode> = {
+    transactions: (
+      <TransactionList 
+        transactions={props.filteredTransactions} 
+        onEditTransaction={props.onEditTransaction}
+        onDeleteTransaction={props.onDeleteTransaction}
+        onAddTransaction={props.onAddTransaction}
+        onImportTransactions={props.onImportTransactions}
+        wallets={props.wallets}
+        isInSidebar={false}
+        selectedWallet={props.selectedWallet}
+      />
+    ),
+    'financial-analysis': (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Chart transactions={props.filteredTransactions} />
+          <CategoryCharts transactions={props.filteredTransactions} isInSidebar={false} />
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <SpendingTrends transactions={props.transactions} />
+          <SpendingInsights transactions={props.transactions} />
+        </div>
+        <FinancialHealth transactions={props.transactions} />
+      </div>
+    ),
+    'budget-goals': (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <BudgetTracker transactions={props.transactions} />
+        <SavingsGoals />
+      </div>
+    ),
+    'quick-overview': (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Balance transactions={props.filteredTransactions} />
+        <QuickStats transactions={props.filteredTransactions} />
+      </div>
+    ),
+    'add-transaction': (
+      <div className="max-w-2xl mx-auto">
+        <TransactionForm 
+          onAddTransaction={props.onAddTransaction} 
+          selectedWallet={props.selectedWallet} 
+          wallets={props.wallets}
+          onCreateWallet={props.onNavigateToWallets}
         />
-      )
-    },
-    'financial-analysis': {
-      title: 'Financial Analysis',
-      description: 'Comprehensive analysis of your financial data',
-      component: (
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Chart transactions={filteredTransactions} />
-            <CategoryCharts transactions={filteredTransactions} isInSidebar={false} />
-          </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SpendingTrends transactions={transactions} />
-            <SpendingInsights transactions={transactions} />
-          </div>
-          <FinancialHealth transactions={transactions} />
+      </div>
+    ),
+    wallets: (
+      <div className="max-w-4xl mx-auto">
+        <WalletManager 
+          onAddTransaction={props.onAddTransaction}
+          onWalletChange={props.onRefreshWallets}
+          selectedWallet={props.selectedWallet}
+          onWalletSelect={props.onWalletSelect}
+          deleteTransactionsByWallet={props.onDeleteTransactionsByWallet}
+          transactions={props.transactions}
+        />
+      </div>
+    ),
+    settings: (
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
+          <h3 className="text-xl font-semibold text-white mb-4">Data Management</h3>
+          <p className="text-gray-400 mb-6">
+            Reset all your data. This action cannot be undone.
+          </p>
+          <button
+            onClick={props.onShowResetModal}
+            className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+          >
+            Reset Data
+          </button>
         </div>
-      )
-    },
-    'budget-goals': {
-      title: 'Budget & Goals',
-      description: 'Track your budget and savings goals',
-      component: (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <BudgetTracker transactions={transactions} />
-          <SavingsGoals />
-        </div>
-      )
-    },
-    'quick-overview': {
-      title: 'Quick Overview',
-      description: 'Essential financial metrics at a glance',
-      component: (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Balance transactions={filteredTransactions} />
-          <QuickStats transactions={filteredTransactions} />
-        </div>
-      )
-    },
-    'add-transaction': {
-      title: 'Add Transaction',
-      description: 'Record your income or expense',
-      component: (
-        <div className="max-w-2xl mx-auto">
-          <TransactionForm 
-            onAddTransaction={onAddTransaction} 
-            selectedWallet={selectedWallet} 
-            wallets={wallets}
-            onCreateWallet={onNavigateToWallets}
-          />
-        </div>
-      )
-    },
-    wallets: {
-      title: 'Wallet Management',
-      description: 'Create and manage your wallets',
-      component: (
-        <div className="max-w-4xl mx-auto">
-          <WalletManager 
-            onAddTransaction={onAddTransaction}
-            onWalletChange={onRefreshWallets}
-            selectedWallet={selectedWallet}
-            onWalletSelect={onWalletSelect}
-            deleteTransactionsByWallet={onDeleteTransactionsByWallet}
-            transactions={transactions}
-          />
-        </div>
-      )
-    },
-    settings: {
-      title: 'Settings',
-      description: 'Manage your application settings',
-      component: (
-        <div className="max-w-2xl mx-auto">
-          <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
-            <h3 className="text-xl font-semibold text-white mb-4">Data Management</h3>
-            <p className="text-gray-400 mb-6">
-              Reset all your data. This action cannot be undone.
-            </p>
-            <button
-              onClick={onShowResetModal}
-              className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-            >
-              Reset Data
-            </button>
-          </div>
-        </div>
-      )
-    }
+      </div>
+    )
   };
 
-  const config = viewConfigs[currentView];
-  
   return (
     <div className="space-y-6">
-      {config.component}
+      {views[props.currentView]}
     </div>
   );
 }
