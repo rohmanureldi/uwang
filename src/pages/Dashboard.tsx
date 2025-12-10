@@ -1,21 +1,10 @@
 import { useState, useEffect } from 'react';
 
-import { useTransactions } from '../hooks/useTransactions';
-import { useWallets } from '../hooks/useWallets';
+import { Transaction } from '../types';
+import { useDashboardViewModel } from '../viewmodels/useDashboardViewModel';
 import TransactionForm from '../components/TransactionForm';
-import TransactionList from '../components/TransactionList';
-import Balance from '../components/Balance';
-import Chart from '../components/Chart';
-import QuickStats from '../components/QuickStats';
-import BudgetTracker from '../components/BudgetTracker';
-import SavingsGoals from '../components/SavingsGoals';
-import SpendingTrends from '../components/SpendingTrends';
-import FinancialHealth from '../components/FinancialHealth';
-import SpendingInsights from '../components/SpendingInsights';
-import CategoryCharts from '../components/CategoryCharts';
-import WalletBalance from '../components/WalletBalance';
-import WalletManager from '../components/WalletManager';
 import WalletSelector from '../components/WalletSelector';
+import ViewRenderer from '../components/ViewRenderer';
 import { DashboardCard } from '../components/DashboardCustomizer';
 import { DollarSign, Settings, Plus, X, BarChart3, Wallet2, Menu, TrendingUp, Target, Eye, PlusCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,26 +18,9 @@ interface Props {
 type ViewType = 'transactions' | 'financial-analysis' | 'budget-goals' | 'quick-overview' | 'add-transaction' | 'wallets' | 'settings';
 
 export default function Dashboard({ dashboardCards, setDashboardCards }: Props) {
-  const [currentView, setCurrentView] = useState<ViewType>('transactions');
-  const [showTransactionModal, setShowTransactionModal] = useState(false);
-  const [selectedWallet, setSelectedWallet] = useState('');
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-
-  const { transactions, loading, addTransaction, editTransaction, deleteTransaction, importTransactions, deleteTransactionsByWallet, resetData } = useTransactions();
-  const { wallets, updateWalletBalance, refreshWallets } = useWallets(transactions);
+  const { state, transactions, filteredTransactions, wallets, actions, refreshWallets } = useDashboardViewModel();
   
-  // Set default wallet when wallets load
-  useEffect(() => {
-    if (wallets.length > 0 && !selectedWallet) {
-      setSelectedWallet('global');
-    }
-  }, [wallets, selectedWallet]);
 
-
-  const filteredTransactions = selectedWallet === 'global' || !selectedWallet 
-    ? transactions 
-    : transactions.filter(t => t.wallet_id === selectedWallet);
 
   const menuItems = [
     {
@@ -95,143 +67,9 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
     }
   ];
 
-  const renderMainContent = () => {
-    switch (currentView) {
-      case 'transactions':
-        return (
-          <TransactionList 
-            transactions={filteredTransactions} 
-            onEditTransaction={editTransaction}
-            onDeleteTransaction={deleteTransaction}
-            onAddTransaction={addTransaction}
-            onImportTransactions={(transactions, walletId) => {
-              const transactionsWithWallet = transactions.map(t => ({
-                ...t,
-                wallet_id: walletId === 'global' ? undefined : walletId
-              }));
-              importTransactions(transactionsWithWallet);
-            }}
-            wallets={wallets}
-            isInSidebar={false}
-            selectedWallet={selectedWallet}
-          />
-        );
-      
-      case 'financial-analysis':
-        return (
-          <div className="space-y-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Financial Analysis</h2>
-              <p className="text-gray-400">Comprehensive analysis of your financial data</p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Chart transactions={filteredTransactions} />
-              <CategoryCharts transactions={filteredTransactions} isInSidebar={false} />
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <SpendingTrends transactions={transactions} />
-              <SpendingInsights transactions={transactions} />
-            </div>
-            <FinancialHealth transactions={transactions} />
-          </div>
-        );
-      
-      case 'budget-goals':
-        return (
-          <div className="space-y-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Budget & Goals</h2>
-              <p className="text-gray-400">Track your budget and savings goals</p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <BudgetTracker transactions={transactions} />
-              <SavingsGoals />
-            </div>
-          </div>
-        );
-      
-      case 'quick-overview':
-        return (
-          <div className="space-y-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Quick Overview</h2>
-              <p className="text-gray-400">Essential financial metrics at a glance</p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Balance transactions={filteredTransactions} />
-              <QuickStats transactions={filteredTransactions} />
-            </div>
-          </div>
-        );
-      
-      case 'add-transaction':
-        return (
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Add Transaction</h2>
-              <p className="text-gray-400">Record your income or expense</p>
-            </div>
-            <TransactionForm 
-              onAddTransaction={addTransaction} 
-              selectedWallet={selectedWallet} 
-              wallets={wallets}
-              onCreateWallet={() => {
-                setCurrentView('wallets');
-                setTimeout(() => {
-                  const event = new CustomEvent('expandWalletForm');
-                  window.dispatchEvent(event);
-                }, 100);
-              }}
-            />
-          </div>
-        );
-      
-      case 'wallets':
-        return (
-          <div className="max-w-4xl mx-auto">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Wallet Management</h2>
-              <p className="text-gray-400">Create and manage your wallets</p>
-            </div>
-            <WalletManager 
-              onAddTransaction={addTransaction}
-              onWalletChange={refreshWallets}
-              selectedWallet={selectedWallet}
-              onWalletSelect={setSelectedWallet}
-              deleteTransactionsByWallet={deleteTransactionsByWallet}
-              transactions={transactions}
-            />
-          </div>
-        );
-      
-      case 'settings':
-        return (
-          <div className="max-w-2xl mx-auto">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Settings</h2>
-              <p className="text-gray-400">Manage your application settings</p>
-            </div>
-            <div className="bg-gray-900 rounded-xl p-6 border border-gray-700">
-              <h3 className="text-xl font-semibold text-white mb-4">Data Management</h3>
-              <p className="text-gray-400 mb-6">
-                Reset all your data. This action cannot be undone.
-              </p>
-              <button
-                onClick={() => setShowResetModal(true)}
-                className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
-              >
-                Reset Data
-              </button>
-            </div>
-          </div>
-        );
-      
-      default:
-        return null;
-    }
-  };
 
-  if (loading) {
+
+  if (state.loading) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -264,9 +102,9 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             {menuItems.filter(item => item.category === 'main').map((item) => (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
+                onClick={() => actions.setCurrentView(item.id)}
                 className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  state.currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
                 }`}
               >
                 {item.icon}
@@ -280,9 +118,9 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             {menuItems.filter(item => item.category === 'analysis').map((item) => (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
+                onClick={() => actions.setCurrentView(item.id)}
                 className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  state.currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
                 }`}
               >
                 {item.icon}
@@ -296,9 +134,9 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             {menuItems.filter(item => item.category === 'planning').map((item) => (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
+                onClick={() => actions.setCurrentView(item.id)}
                 className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  state.currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
                 }`}
               >
                 {item.icon}
@@ -312,9 +150,9 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             {menuItems.filter(item => item.category === 'overview').map((item) => (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
+                onClick={() => actions.setCurrentView(item.id)}
                 className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  state.currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
                 }`}
               >
                 {item.icon}
@@ -328,9 +166,9 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             {menuItems.filter(item => item.category === 'actions').map((item) => (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
+                onClick={() => actions.setCurrentView(item.id)}
                 className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  state.currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
                 }`}
               >
                 {item.icon}
@@ -344,9 +182,9 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             {menuItems.filter(item => item.category === 'management').map((item) => (
               <button
                 key={item.id}
-                onClick={() => setCurrentView(item.id)}
+                onClick={() => actions.setCurrentView(item.id)}
                 className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-3 transition-colors ${
-                  currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                  state.currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
                 }`}
               >
                 {item.icon}
@@ -391,16 +229,16 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             {/* Desktop Title */}
             <div className="hidden lg:block">
               <h2 className="text-xl font-semibold text-white">
-                {menuItems.find(item => item.id === currentView)?.name || 'Dashboard'}
+                {menuItems.find(item => item.id === state.currentView)?.name || 'Dashboard'}
               </h2>
               <p className="text-sm text-gray-400">
-                {currentView === 'transactions' && 'Monitor and manage your transactions'}
-                {currentView === 'financial-analysis' && 'Comprehensive analysis of your financial data'}
-                {currentView === 'budget-goals' && 'Track your budget and savings goals'}
-                {currentView === 'quick-overview' && 'Essential financial metrics at a glance'}
-                {currentView === 'add-transaction' && 'Record your income or expense'}
-                {currentView === 'wallets' && 'Create and manage your wallets'}
-                {currentView === 'settings' && 'Manage your application settings'}
+                {state.currentView === 'transactions' && 'Monitor and manage your transactions'}
+                {state.currentView === 'financial-analysis' && 'Comprehensive analysis of your financial data'}
+                {state.currentView === 'budget-goals' && 'Track your budget and savings goals'}
+                {state.currentView === 'quick-overview' && 'Essential financial metrics at a glance'}
+                {state.currentView === 'add-transaction' && 'Record your income or expense'}
+                {state.currentView === 'wallets' && 'Create and manage your wallets'}
+                {state.currentView === 'settings' && 'Manage your application settings'}
               </p>
             </div>
             
@@ -408,14 +246,14 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             <div className="flex items-center gap-3">
               {/* Desktop Wallet Picker */}
               <div className="hidden lg:block">
-                <WalletSelector selectedWallet={selectedWallet} onWalletChange={setSelectedWallet} wallets={wallets} />
+                <WalletSelector selectedWallet={state.selectedWallet} onWalletChange={actions.setSelectedWallet} wallets={wallets} />
               </div>
             </div>
           </div>
           
           {/* Mobile Wallet Selector */}
           <div className="lg:hidden mt-3 pt-3 border-t border-gray-700">
-            <WalletSelector selectedWallet={selectedWallet} onWalletChange={setSelectedWallet} wallets={wallets} />
+            <WalletSelector selectedWallet={state.selectedWallet} onWalletChange={actions.setSelectedWallet} wallets={wallets} />
           </div>
         </header>
         
@@ -423,23 +261,39 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
         <main className="p-4 lg:p-8">
           <AnimatePresence mode="wait">
             <motion.div
-              key={currentView}
+              key={state.currentView}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.2 }}
             >
-              {renderMainContent()}
+              <ViewRenderer
+                currentView={state.currentView}
+                transactions={transactions}
+                filteredTransactions={filteredTransactions}
+                wallets={wallets}
+                selectedWallet={state.selectedWallet}
+                onAddTransaction={actions.addTransaction}
+                onEditTransaction={actions.editTransaction}
+                onDeleteTransaction={actions.deleteTransaction}
+                onImportTransactions={actions.importTransactions}
+                onDeleteTransactionsByWallet={actions.deleteTransactionsByWallet}
+                onRefreshWallets={refreshWallets}
+                onWalletSelect={actions.setSelectedWallet}
+                onResetData={actions.resetData}
+                onShowResetModal={actions.showResetModal}
+                onNavigateToWallets={actions.navigateToWallets}
+              />
             </motion.div>
           </AnimatePresence>
         </main>
       </div>
       
       {/* Mobile Floating Add Button - Only show on transactions view */}
-      {currentView === 'transactions' && (
+      {state.currentView === 'transactions' && (
         <div className="lg:hidden fixed bottom-6 right-6 z-50">
           <button
-            onClick={() => setShowTransactionModal(true)}
+            onClick={actions.showTransactionModal}
             className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-full w-16 h-16 flex items-center justify-center shadow-2xl transition-all transform hover:scale-105 border-4 border-black"
           >
             <Plus className="w-7 h-7" />
@@ -448,11 +302,11 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
       )}
         
       {/* Mobile Transaction Form Modal */}
-      {showTransactionModal && (
+      {state.showTransactionModal && (
         <div 
           className="lg:hidden fixed inset-0 flex items-end justify-center z-50"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.6)', backdropFilter: 'blur(10px)' }}
-          onClick={() => setShowTransactionModal(false)}
+          onClick={actions.hideTransactionModal}
         >
           <div 
             className="bg-gray-900 rounded-t-2xl w-full max-h-[90vh] overflow-y-auto border-t border-gray-700 shadow-2xl animate-scaleIn"
@@ -464,7 +318,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                 <p className="text-sm text-gray-400">Record your income or expense</p>
               </div>
               <button
-                onClick={() => setShowTransactionModal(false)}
+                onClick={actions.hideTransactionModal}
                 className="text-gray-400 hover:text-white bg-gray-800 rounded-full p-3 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
               >
                 <X className="w-5 h-5" />
@@ -473,18 +327,14 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
             <div className="p-4 pb-8">
               <TransactionForm 
                 onAddTransaction={(transaction) => {
-                  addTransaction(transaction);
-                  setShowTransactionModal(false);
+                  actions.addTransaction(transaction);
+                  actions.hideTransactionModal();
                 }}
-                selectedWallet={selectedWallet}
+                selectedWallet={state.selectedWallet}
                 wallets={wallets}
                 onCreateWallet={() => {
-                  setShowTransactionModal(false);
-                  setCurrentView('wallets');
-                  setTimeout(() => {
-                    const event = new CustomEvent('expandWalletForm');
-                    window.dispatchEvent(event);
-                  }, 100);
+                  actions.hideTransactionModal();
+                  actions.navigateToWallets();
                 }}
               />
             </div>
@@ -495,7 +345,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
 
         
         {/* Mobile Menu */}
-        {showMobileMenu && (
+        {state.showMobileMenu && (
           <div className="lg:hidden fixed inset-0 bg-black bg-opacity-60 z-50" style={{ backdropFilter: 'blur(10px)' }}>
             <div className="bg-gray-900 w-80 h-full shadow-2xl">
               <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
@@ -506,7 +356,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                   </h1>
                 </div>
                 <button
-                  onClick={() => setShowMobileMenu(false)}
+                  onClick={actions.closeMobileMenu}
                   className="text-gray-400 hover:text-white bg-gray-800 rounded-full p-2 transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -518,11 +368,11 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
                   <button
                     key={item.id}
                     onClick={() => {
-                      setCurrentView(item.id);
-                      setShowMobileMenu(false);
+                      actions.setCurrentView(item.id);
+                      actions.closeMobileMenu();
                     }}
                     className={`w-full text-left px-4 py-3 rounded-lg flex items-center gap-3 transition-colors ${
-                      currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                      state.currentView === item.id ? 'bg-purple-600 text-white' : 'text-gray-300 hover:text-white hover:bg-gray-800'
                     }`}
                   >
                     {item.icon}
@@ -545,7 +395,7 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
         )}
         
         {/* Reset Data Confirmation Modal */}
-        {showResetModal && (
+        {state.showResetModal && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4" style={{ backdropFilter: 'blur(10px)' }}>
             <div className="bg-gray-900 rounded-xl border border-gray-700 shadow-2xl max-w-md w-full">
               <div className="px-4 lg:px-6 py-4 border-b border-gray-700">
@@ -565,16 +415,14 @@ export default function Dashboard({ dashboardCards, setDashboardCards }: Props) 
               
               <div className="px-4 lg:px-6 py-4 border-t border-gray-700 flex flex-col lg:flex-row gap-3">
                 <button
-                  onClick={() => setShowResetModal(false)}
+                  onClick={actions.hideResetModal}
                   className="flex-1 px-4 py-3 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium min-h-[44px]"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={async () => {
-                    await resetData();
-                    setShowResetModal(false);
-                    setShowSettingsModal(false);
+                    await actions.resetData();
                     window.location.reload();
                   }}
                   className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium min-h-[44px]"

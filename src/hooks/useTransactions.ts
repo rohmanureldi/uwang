@@ -3,8 +3,12 @@ import { supabase } from '../lib/supabase';
 import { Transaction } from '../types';
 import { syncService } from '../services/syncService';
 import { STORAGE_KEYS } from '../utils/constants';
+import { TransactionService, ITransactionService } from '../services/TransactionService';
 
-export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amount: number, isIncome: boolean) => void) {
+export function useTransactions(
+  onWalletBalanceUpdate?: (walletId: string, amount: number, isIncome: boolean) => void,
+  transactionService: ITransactionService = new TransactionService()
+) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [useLocalStorage, setUseLocalStorage] = useState(false);
@@ -78,9 +82,10 @@ export function useTransactions(onWalletBalanceUpdate?: (walletId: string, amoun
       onWalletBalanceUpdate(transactionData.wallet_id, transactionData.amount, transactionData.type === 'income');
     }
 
+    const formattedData = transactionService.formatTransactionData(transactionData);
     const newTransaction: Transaction = {
-      ...transactionData,
-      id: Date.now().toString()
+      ...formattedData,
+      id: transactionService.createTransactionId()
     };
 
     // Always save to localStorage first
