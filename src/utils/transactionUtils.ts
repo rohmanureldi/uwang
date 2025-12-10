@@ -9,12 +9,21 @@ export const parseAmount = (amount: string): number => {
   return parseFloat(amount.replace(/\\./g, ''));
 };
 
-export const createDefaultTransaction = () => ({
+export const createDefaultTransaction = (): {
+  amount: string;
+  description: string;
+  category: string;
+  subcategory: string;
+  type: 'income' | 'expense';
+  date: string;
+  time: string;
+  wallet_id: string;
+} => ({
   amount: '',
   description: '',
   category: '',
   subcategory: '',
-  type: 'expense' as const,
+  type: 'expense',
   date: new Date().toISOString().split('T')[0],
   time: new Date().toTimeString().slice(0, 5),
   wallet_id: ''
