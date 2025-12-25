@@ -74,7 +74,10 @@ export function useTransactionListViewModel(
     selectedCategoryIndex: -1,
     selectedSubcategoryIndex: -1,
     isEditing: false,
-    editingTransactionId: null as string | null
+    editingTransactionId: null as string | null,
+    showQuickActions: false,
+    keepModalOpen: false,
+    pendingTransactions: [] as Array<Omit<Transaction, 'id'>>
   });
 
   const [newTransaction, setNewTransaction] = useState(createDefaultTransaction());
@@ -266,6 +269,36 @@ export function useTransactionListViewModel(
     handleEditAmountChange: (value: string) => {
       const formatted = formatNumber(value);
       setEditing(prev => ({ ...prev, editForm: { ...prev.editForm, amount: formatted } }));
+    },
+
+    // Pending transactions actions
+    addToPending: (transaction: Omit<Transaction, 'id'>) => {
+      setUi(prev => ({ 
+        ...prev, 
+        pendingTransactions: [...prev.pendingTransactions, transaction]
+      }));
+      setNewTransaction(createDefaultTransaction());
+    },
+
+    removeFromPending: (index: number) => {
+      setUi(prev => ({ 
+        ...prev, 
+        pendingTransactions: prev.pendingTransactions.filter((_, i) => i !== index)
+      }));
+    },
+
+    clearPending: () => {
+      setUi(prev => ({ ...prev, pendingTransactions: [] }));
+    },
+
+    submitAllPending: async (onAddTransaction?: (transaction: Omit<Transaction, 'id'>) => void) => {
+      if (onAddTransaction) {
+        for (const transaction of ui.pendingTransactions) {
+          onAddTransaction(transaction);
+        }
+      }
+      setUi(prev => ({ ...prev, pendingTransactions: [], isAddingNew: false }));
+      setNewTransaction(createDefaultTransaction());
     }
   };
 
@@ -283,6 +316,9 @@ export function useTransactionListViewModel(
     categories,
     hasSearchResults: filteredAndSortedTransactions.length > 0,
     isSearching: filters.debouncedSearchText.trim() !== '',
+    
+    // Computed
+    hasPendingTransactions: ui.pendingTransactions.length > 0,
     
     // Actions
     actions

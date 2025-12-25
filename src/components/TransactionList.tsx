@@ -24,7 +24,7 @@ interface Props {
 
 export default function TransactionList({ transactions, onEditTransaction, onDeleteTransaction, onAddTransaction, onImportTransactions, wallets = [], isInSidebar = false, selectedWallet = '' }: Props) {
   const viewModel = useTransactionListViewModel(transactions, selectedWallet);
-  const { filters, ui, newTransaction, paginatedGroups, totalPages, categories, hasSearchResults, isSearching, actions } = viewModel;
+  const { filters, ui, newTransaction, paginatedGroups, totalPages, categories, hasSearchResults, isSearching, hasPendingTransactions, actions } = viewModel;
   
   const viewMode = window.innerWidth < MOBILE_BREAKPOINT ? 'list' : 'table';
 
@@ -48,11 +48,12 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
   const handleSaveTransaction = (transactionData: Omit<Transaction, 'id'>) => {
     if (ui.isEditing && ui.editingTransactionId) {
       onEditTransaction(ui.editingTransactionId, transactionData);
+      actions.setUiState({ isAddingNew: false, isEditing: false, editingTransactionId: null });
     } else if (onAddTransaction) {
       onAddTransaction(transactionData);
+      actions.setUiState({ isAddingNew: false });
     }
     
-    actions.setUiState({ isAddingNew: false, isEditing: false, editingTransactionId: null });
     actions.updateNewTransaction({
       amount: '',
       description: '',
@@ -63,6 +64,16 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
       time: new Date().toTimeString().slice(0, 5),
       wallet_id: ''
     });
+  };
+
+  const handleAddMoreTransaction = (transactionData: Omit<Transaction, 'id'>) => {
+    actions.addToPending(transactionData);
+  };
+
+  const handleSubmitAllPending = () => {
+    if (onAddTransaction) {
+      actions.submitAllPending(onAddTransaction);
+    }
   };
 
   const exportToCSV = () => {
@@ -476,9 +487,16 @@ export default function TransactionList({ transactions, onEditTransaction, onDel
         selectedWallet={selectedWallet}
         wallets={wallets}
         ui={ui}
-        actions={actions}
+        actions={{
+          ...actions,
+          submitAllPending: handleSubmitAllPending
+        }}
         onSave={handleSaveTransaction}
-        onClose={() => actions.setUiState({ isAddingNew: false, isEditing: false, editingTransactionId: null })}
+        onAddMore={handleAddMoreTransaction}
+        onClose={() => {
+          actions.clearPending();
+          actions.setUiState({ isAddingNew: false, isEditing: false, editingTransactionId: null });
+        }}
       />
 
     </motion.div>
